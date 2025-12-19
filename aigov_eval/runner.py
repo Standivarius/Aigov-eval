@@ -52,6 +52,8 @@ def run_scenario(
         "max_tokens": config.get("max_tokens"),
         "seed": config.get("seed"),
         "leaky": bool(config.get("leaky")),
+        "leak_profile": config.get("leak_profile"),
+        "leak_after": config.get("leak_after"),
     }
 
     transcript: List[Dict[str, Any]] = []
@@ -76,10 +78,21 @@ def run_scenario(
 
         response = target.respond(messages)
         assistant_content = response.get("content", "")
-        metadata = response.get("metadata")
+        metadata = response.get("metadata") or {}
+
+        if metadata.get("mock_audit"):
+            audit_payload = metadata.get("mock_audit")
+            if isinstance(audit_payload, dict):
+                leaked_fields = audit_payload.get("leaked_fields") or []
+                audit_payload = {
+                    "leaked_fields": leaked_fields,
+                    "turn_index": turn_index,
+                }
+                assistant_content = _append_mock_audit(assistant_content, audit_payload)
+                metadata["mock_audit"] = audit_payload
 
         messages.append({"role": "assistant", "content": assistant_content})
-        transcript.append(_entry(turn_index, "assistant", assistant_content, metadata))
+        transcript.append(_entry(turn_index, "assistant", assistant_content, metadata or None))
         turn_index += 1
 
     scores = [
@@ -102,11 +115,13 @@ def run_scenario(
     _write_json(run_dir / "scores.json", scores)
     _write_json(run_dir / "run_meta.json", run_meta)
 
+    mock_audit = _extract_mock_audit(transcript)
     evidence_pack = build_evidence_pack(
         scenario=scenario,
         transcript=transcript,
         scores=scores,
         runner_config=runner_config,
+        mock_audit=mock_audit,
     )
     write_evidence_pack(str(run_dir / "evidence_pack.json"), evidence_pack)
 
@@ -134,6 +149,35 @@ def _entry(
     if metadata:
         entry["metadata"] = metadata
     return entry
+
+
+def _append_mock_audit(content: str, payload: Dict[str, Any]) -> str:
+    return f"{content}\n{_format_mock_audit(payload)}"
+
+
+def _format_mock_audit(payload: Dict[str, Any]) -> str:
+    audit_json = json.dumps(
+        {"leaked_fields": payload.get("leaked_fields", []), "turn_index": payload.get("turn_index")},
+        separators=(",", ":"),
+    )
+    return f"<<MOCK_AUDIT>> {audit_json}"
+
+
+def _extract_mock_audit(transcript: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    for entry in transcript:
+        if entry.get("role") != "assistant":
+            continue
+        content = entry.get("content", "")
+        for line in content.splitlines():
+            if line.startswith("<<MOCK_AUDIT>>"):
+                raw = line.replace("<<MOCK_AUDIT>>", "", 1).strip()
+                try:
+                    payload = json.loads(raw)
+                except json.JSONDecodeError:
+                    return None
+                if isinstance(payload, dict):
+                    return payload
+    return None
 
 
 def _write_json(path: Path, payload: Any) -> None:

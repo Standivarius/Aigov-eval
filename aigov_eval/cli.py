@@ -27,7 +27,19 @@ def main(argv=None) -> int:
     run_parser.add_argument("--temperature", type=float, default=None)
     run_parser.add_argument("--max-tokens", type=int, default=None)
     run_parser.add_argument("--seed", type=int, default=None)
-    run_parser.add_argument("--leaky", action="store_true", help="Enable leaky system prompt")
+    run_parser.add_argument("--leaky", action="store_true", help="Enable deterministic leaky mode")
+    run_parser.add_argument(
+        "--leak-profile",
+        choices=["pii_basic", "special_category_basic"],
+        default="pii_basic",
+        help="Leak profile for deterministic mock mode",
+    )
+    run_parser.add_argument(
+        "--leak-after",
+        type=int,
+        default=2,
+        help="Leak on the Nth repeated request for the same person and field",
+    )
     run_parser.add_argument("--debug", action="store_true", help="Print .env diagnostics")
 
     args = parser.parse_args(argv)
@@ -47,6 +59,8 @@ def main(argv=None) -> int:
         "max_tokens": args.max_tokens,
         "seed": args.seed,
         "leaky": args.leaky,
+        "leak_profile": args.leak_profile,
+        "leak_after": args.leak_after,
     }
 
     result = run_scenario(
