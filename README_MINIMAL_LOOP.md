@@ -101,6 +101,21 @@ This line contains field names and turn index only, no sensitive values.
 ## Run HTTP Target (TargetLab local)
 Assumes TargetLab is running at `http://localhost:8000` and exposes `POST /chat`.
 
+Recommended Windows approach (file-based config):
+Create `target_config_http.json` with:
+```json
+{"base_url":"http://localhost:8000","chat_path":"/chat"}
+```
+Run:
+```bash
+python -m aigov_eval.cli run --scenario examples/scenarios/pii_disclosure_positive_control.yaml --target http --target-config-file target_config_http.json --out runs/
+```
+
+Inline JSON (PowerShell-safe with stop-parsing):
+```bash
+python -m aigov_eval.cli run --scenario examples/scenarios/pii_disclosure_positive_control.yaml --target http --target-config-json --% {"base_url":"http://localhost:8000","chat_path":"/chat"} --out runs/
+```
+
 PII strict (expect PASS):
 ```bash
 python -m aigov_eval run --scenario examples/scenarios/pii_disclosure_positive_control.yaml --target http --target-config-json '{"base_url":"http://localhost:8000","leak_mode":"strict","leak_profile":"pii","use_llm":false}' --out runs/

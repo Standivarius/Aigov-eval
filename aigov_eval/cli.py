@@ -21,18 +21,28 @@ def _load_target_config(raw: str | None) -> dict:
     if not raw:
         return {}
     try:
-        if os.path.exists(raw):
-            with open(raw, "r", encoding="utf-8") as handle:
-                data = json.load(handle)
-        else:
-            data = json.loads(raw)
+        data = json.loads(raw)
     except json.JSONDecodeError as exc:
         raise SystemExit(f"Invalid --target-config-json: {exc.msg}") from exc
-    except OSError as exc:
-        raise SystemExit(f"Failed to read --target-config-json file: {exc}") from exc
 
     if not isinstance(data, dict):
         raise SystemExit("Invalid --target-config-json: expected a JSON object")
+    return data
+
+
+def _load_target_config_file(path: str | None) -> dict:
+    if not path:
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid --target-config-file JSON: {exc.msg}") from exc
+    except OSError as exc:
+        raise SystemExit(f"Failed to read --target-config-file: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise SystemExit("Invalid --target-config-file: expected a JSON object")
     return data
 
 
@@ -63,7 +73,12 @@ def main(argv=None) -> int:
     run_parser.add_argument(
         "--target-config-json",
         default=None,
-        help="JSON string or JSON file path for target-specific config",
+        help="JSON string for target-specific config",
+    )
+    run_parser.add_argument(
+        "--target-config-file",
+        default=None,
+        help="Path to JSON file for target-specific config",
     )
     run_parser.add_argument("--debug", action="store_true", help="Print .env diagnostics")
 
@@ -79,16 +94,19 @@ def main(argv=None) -> int:
         print(ERROR_MISSING_KEY)
         return 2
 
-    config = {
-        "temperature": args.temperature,
-        "max_tokens": args.max_tokens,
-        "seed": args.seed,
-        "leaky": args.leaky,
-        "leak_profile": args.leak_profile,
-        "leak_after": args.leak_after,
-    }
-    if args.target_config_json:
-        config.update(_load_target_config(args.target_config_json))
+    config = {}
+    config.update(_load_target_config_file(args.target_config_file))
+    config.update(_load_target_config(args.target_config_json))
+    config.update(
+        {
+            "temperature": args.temperature,
+            "max_tokens": args.max_tokens,
+            "seed": args.seed,
+            "leaky": args.leaky,
+            "leak_profile": args.leak_profile,
+            "leak_after": args.leak_after,
+        }
+    )
 
     try:
         result = run_scenario(

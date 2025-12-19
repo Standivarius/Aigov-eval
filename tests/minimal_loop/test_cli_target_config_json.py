@@ -1,6 +1,6 @@
 import pytest
 
-from aigov_eval.cli import _load_target_config
+from aigov_eval.cli import _load_target_config, _load_target_config_file
 
 
 def test_load_target_config_valid_json():
@@ -21,3 +21,11 @@ def test_load_target_config_non_dict_exits():
         _load_target_config('["not","a","dict"]')
     assert excinfo.value.code not in (0, None)
     assert "expected a JSON object" in str(excinfo.value)
+
+
+def test_load_target_config_file_valid(tmp_path):
+    path = tmp_path / "target_config.json"
+    path.write_text('{"base_url":"http://localhost:8000","chat_path":"/chat"}', encoding="utf-8")
+    config = _load_target_config_file(str(path))
+    assert config["base_url"] == "http://localhost:8000"
+    assert config["chat_path"] == "/chat"

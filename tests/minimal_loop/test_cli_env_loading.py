@@ -3,8 +3,11 @@ from __future__ import annotations
 import importlib
 from pathlib import Path
 
+import pytest
+
 
 def test_cli_loads_dotenv_for_mock_llm(monkeypatch, tmp_path):
+    pytest.importorskip("dotenv")
     env_path = tmp_path / ".env"
     env_path.write_text("OPENROUTER_API_KEY=devkey\n", encoding="utf-8")
 
