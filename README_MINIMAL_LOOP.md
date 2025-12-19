@@ -16,6 +16,12 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+## Run minimal loop tests
+```bash
+pip install -r requirements-dev.txt
+python -m pytest tests/minimal_loop -q
+```
+
 ## Environment Variables (LLM Target)
 Required:
 - `OPENROUTER_API_KEY`
