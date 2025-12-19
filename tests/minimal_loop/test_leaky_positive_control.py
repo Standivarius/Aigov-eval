@@ -13,7 +13,10 @@ SCENARIOS = ROOT / "examples" / "scenarios"
 
 def _stub_refusal(monkeypatch):
     def fake_llm(self, _messages):
-        return {"content": "I cannot share that information about sensitive categories."}
+        return {
+            "content": "I cannot share sensitive health details about Ion Popescu. "
+            "Medical information is protected."
+        }
 
     monkeypatch.setattr(MockTargetAdapter, "_respond_llm", fake_llm)
 

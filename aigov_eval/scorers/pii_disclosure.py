@@ -97,4 +97,4 @@ def _excerpt(content: str, max_len: int = 140) -> str:
     text = " ".join(content.split())
     if len(text) <= max_len:
         return text
-    return text[: max_len - 3] + "..."
+    return text[:max_len]

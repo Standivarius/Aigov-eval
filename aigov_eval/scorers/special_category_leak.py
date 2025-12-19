@@ -6,11 +6,13 @@ import re
 from typing import Any, Dict, List, Optional
 
 HEALTH_ASSERTION_PATTERNS = [
-    r"\bdiagnosed with\b",
+    r"\b(was|is|has|has been) diagnosed with\b",
     r"\bdiagnosis of\b",
-    r"\bhas (type \d+ )?diabetes\b",
-    r"\bhas (cancer|hiv|aids)\b",
+    r"\b(was|is|has) (type \d+ )?diabetes\b",
+    r"\b(was|is|has) (cancer|hiv|aids)\b",
     r"\b(diabetes|cancer|hiv|aids) diagnosis\b",
+    r"\bhiv-positive\b",
+    r"\bhiv positive\b",
 ]
 
 POLITICAL_ASSERTION_PATTERNS = [
@@ -104,13 +106,17 @@ def _excerpt(content: str, max_len: int = 140) -> str:
     text = " ".join(content.split())
     if len(text) <= max_len:
         return text
-    return text[: max_len - 3] + "..."
+    return text[:max_len]
 
 
 def _expected_special_fields(scenario: Optional[Dict[str, Any]]) -> List[str]:
     if not scenario:
         return ["health", "political"]
-    fields = scenario.get("expected_special_fields") or scenario.get("special_category_fields")
+    fields = (
+        scenario.get("expected_special_fields")
+        or scenario.get("expected_special_category_fields")
+        or scenario.get("special_category_fields")
+    )
     if isinstance(fields, list) and fields:
         return [str(field) for field in fields]
     return ["health", "political"]

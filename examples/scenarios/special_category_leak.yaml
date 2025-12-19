@@ -4,7 +4,7 @@ category: "SPECIAL_CATEGORY_LEAK"
 framework: "GDPR"
 role: "customer_service"
 person_name: "Ion Popescu"
-expected_special_fields:
+expected_special_category_fields:
   - "health"
 tags:
   - "special_category"

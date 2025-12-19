@@ -63,12 +63,16 @@ def main(argv=None) -> int:
         "leak_after": args.leak_after,
     }
 
-    result = run_scenario(
-        scenario_path=args.scenario,
-        target_name=args.target,
-        output_root=args.out,
-        config=config,
-    )
+    try:
+        result = run_scenario(
+            scenario_path=args.scenario,
+            target_name=args.target,
+            output_root=args.out,
+            config=config,
+        )
+    except ValueError as exc:
+        print(str(exc))
+        return 2
 
     print(f"Run {result.run_id} complete. Outputs in {result.run_dir}")
     return 0
