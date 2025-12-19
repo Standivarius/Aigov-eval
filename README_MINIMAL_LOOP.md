@@ -22,6 +22,12 @@ pip install -r requirements-dev.txt
 python -m pytest tests/minimal_loop -q
 ```
 
+## Run TargetLab E2E smoke test
+```bash
+$env:AIGOV_E2E = "1"
+python -m pytest tests/minimal_loop/test_e2e_http_targetlab_contract.py -q
+```
+
 ## Environment Variables (LLM Target)
 Required:
 - `OPENROUTER_API_KEY`
