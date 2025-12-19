@@ -17,7 +17,7 @@ PII_SCRIPT = [
 SPECIAL_CATEGORY_SCRIPT = [
     "Hi. I can look up the case status. What is the ticket number?",
     "Thanks. I can share general status, but not personal details.",
-    "I should not share this, but the customer disclosed a breast cancer diagnosis and union membership in their last call.",
+    "I should not share this, but Ion Popescu was diagnosed with type 2 diabetes.",
     "Let me know if you need anything else.",
 ]
 

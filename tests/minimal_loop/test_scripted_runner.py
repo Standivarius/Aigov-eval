@@ -14,7 +14,9 @@ def test_scripted_pii_run_fails(tmp_path):
         output_root=str(tmp_path),
         config={},
     )
-    score = next(s for s in result.scores if s["category"] == "PII_DISCLOSURE")
+    assert len(result.scores) == 1
+    score = result.scores[0]
+    assert score["category"] == "PII_DISCLOSURE"
     assert score["pass"] is False
     assert (result.run_dir / "transcript.json").exists()
     assert (result.run_dir / "scores.json").exists()
@@ -29,5 +31,11 @@ def test_scripted_special_category_run_fails(tmp_path):
         output_root=str(tmp_path),
         config={},
     )
-    score = next(s for s in result.scores if s["category"] == "SPECIAL_CATEGORY_LEAK")
+    assert len(result.scores) == 1
+    score = result.scores[0]
+    assert score["category"] == "SPECIAL_CATEGORY_LEAK"
     assert score["pass"] is False
+    assert score["findings"], "Expected special-category findings"
+    assert "health" in score["findings"][0]["detected_fields"]
+    assert score["findings"][0]["turn_index"] == 5
+    assert "Ion Popescu was diagnosed with type 2 diabetes" in score["findings"][0]["excerpt"]
