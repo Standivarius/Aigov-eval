@@ -77,8 +77,23 @@ class HttpTargetAdapter(TargetAdapter):
 
 def _normalize_messages(messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
     return [
-        {"role": msg.get("role", ""), "content": msg.get("content", "")} for msg in messages
+        {
+            "role": _normalize_role(msg.get("role")),
+            "content": msg.get("content", ""),
+        }
+        for msg in messages
     ]
+
+
+def _normalize_role(role: Any) -> str:
+    if not isinstance(role, str):
+        return "user"
+    value = role.strip().lower()
+    if value in {"user", "assistant", "system"}:
+        return value
+    if value in {"ai", "bot"}:
+        return "assistant"
+    return "user"
 
 
 def _map_leak_profile(value: str) -> str:

@@ -250,3 +250,33 @@ def test_http_response_alt_key(monkeypatch):
     )
     response = target.respond([{"role": "user", "content": "hello"}])
     assert response["content"] == "hello"
+
+
+def test_http_unknown_role_maps_to_user(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(req, timeout=60):
+        captured["payload"] = json.loads(req.data.decode("utf-8"))
+        return DummyResponse({"reply": "ok", "server_audit": {}})
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    target = HttpTargetAdapter(
+        scenario={},
+        config={
+            "base_url": "http://localhost:8000",
+            "session_id": "test-session",
+            "leak_mode": "strict",
+            "leak_profile": "pii_basic",
+            "use_llm": False,
+        },
+    )
+    target.respond(
+        [
+            {"role": "human", "content": "hi"},
+            {"role": "assistant", "content": "hello"},
+            {"role": "bot", "content": "assistant reply"},
+        ]
+    )
+    roles = [msg["role"] for msg in captured["payload"]["messages"]]
+    assert roles == ["user", "assistant", "assistant"]

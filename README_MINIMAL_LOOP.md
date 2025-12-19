@@ -107,11 +107,6 @@ Use the example file:
 python -m aigov_eval.cli run --scenario examples/scenarios/pii_disclosure_positive_control.yaml --target http --target-config-file examples/target_config_http.json --out runs/
 ```
 
-Inline JSON (PowerShell-safe with stop-parsing, non-Windows optional):
-```bash
-python -m aigov_eval.cli run --scenario examples/scenarios/pii_disclosure_positive_control.yaml --target http --target-config-json --% {"base_url":"http://localhost:8000","chat_path":"/chat"} --out runs/
-```
-
 curl.exe example (correct /chat body with messages):
 ```bash
 curl.exe -X POST http://localhost:8000/chat ^
