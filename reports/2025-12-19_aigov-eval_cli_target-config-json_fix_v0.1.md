@@ -18,3 +18,13 @@ python -m aigov_eval.cli run --target http --target-config-json '{"base_url":"ht
 - `aigov_eval/cli.py`
 - `tests/minimal_loop/test_cli_target_config_json.py`
 - `reports/2025-12-19_aigov-eval_cli_target-config-json_fix_v0.1.md`
+
+## Self-check
+```text
+rg -n "_load_target_config" aigov_eval/cli.py
+20:def _load_target_config(raw: str | None) -> dict:
+91:        config.update(_load_target_config(args.target_config_json))
+
+git rev-parse HEAD
+ea4cf65a20be85e87cfd08c4405aac3117fd6ab1
+```
