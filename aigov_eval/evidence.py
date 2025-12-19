@@ -20,6 +20,7 @@ def build_evidence_pack(
     runner_config: Dict[str, Any],
     mock_audit: Any = None,
     http_audit: Any = None,
+    http_raw_response: Any = None,
 ) -> Dict[str, Any]:
     return {
         "generated_at": _utc_now(),
@@ -37,6 +38,7 @@ def build_evidence_pack(
         "runner_config": runner_config,
         "mock_audit": mock_audit,
         "http_audit": http_audit,
+        "http_raw_response": http_raw_response,
         "limitations": LIMITATIONS,
     }
 

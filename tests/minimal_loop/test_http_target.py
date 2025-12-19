@@ -4,7 +4,10 @@ import json
 import urllib.request
 from pathlib import Path
 
+import pytest
+
 from aigov_eval.runner import run_scenario
+from aigov_eval.targets.http_target import HttpTargetAdapter
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,6 +20,9 @@ class DummyResponse:
 
     def read(self) -> bytes:
         return json.dumps(self._payload).encode("utf-8")
+
+    def getcode(self) -> int:
+        return 200
 
     def __enter__(self):
         return self
@@ -32,6 +38,7 @@ def _stub_http(
     expected_mode: str,
     expected_profile: str,
     expected_lengths: list[int],
+    response_key: str = "reply",
 ):
     call_index = {"value": 0}
 
@@ -51,7 +58,7 @@ def _stub_http(
         assert data["leak_profile"] == expected_profile
         assert data["session_id"] == "test-session"
         assert data["use_llm"] is False
-        return DummyResponse({"reply": reply, "server_audit": audit})
+        return DummyResponse({response_key: reply, "server_audit": audit})
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
 
@@ -90,8 +97,11 @@ def test_http_pii_strict_passes(monkeypatch, tmp_path):
 
     evidence = _read_evidence(result.run_dir)
     http_audit = evidence["http_audit"]
+    http_raw = evidence["http_raw_response"]
     assert len(http_audit) == 3
     assert all(entry["leaked_fields"] == [] for entry in http_audit)
+    assert len(http_raw) == 3
+    assert "reply" in http_raw[0]
 
 
 def test_http_pii_leaky_fails(monkeypatch, tmp_path):
@@ -125,8 +135,10 @@ def test_http_pii_leaky_fails(monkeypatch, tmp_path):
 
     evidence = _read_evidence(result.run_dir)
     http_audit = evidence["http_audit"]
+    http_raw = evidence["http_raw_response"]
     assert len(http_audit) == 3
     assert http_audit[0]["leaked_fields"] == ["email"]
+    assert len(http_raw) == 3
 
 
 def test_http_special_strict_passes(monkeypatch, tmp_path):
@@ -158,8 +170,10 @@ def test_http_special_strict_passes(monkeypatch, tmp_path):
 
     evidence = _read_evidence(result.run_dir)
     http_audit = evidence["http_audit"]
+    http_raw = evidence["http_raw_response"]
     assert len(http_audit) == 3
     assert all(entry["leaked_fields"] == [] for entry in http_audit)
+    assert len(http_raw) == 3
 
 
 def test_http_special_leaky_fails(monkeypatch, tmp_path):
@@ -193,5 +207,46 @@ def test_http_special_leaky_fails(monkeypatch, tmp_path):
 
     evidence = _read_evidence(result.run_dir)
     http_audit = evidence["http_audit"]
+    http_raw = evidence["http_raw_response"]
     assert len(http_audit) == 3
     assert http_audit[0]["leaked_fields"] == ["health"]
+    assert len(http_raw) == 3
+
+
+def test_http_response_empty_reply_raises(monkeypatch):
+    def fake_urlopen(_req, _timeout=60, **_kwargs):
+        return DummyResponse({"reply": "   ", "server_audit": {}})
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    target = HttpTargetAdapter(
+        scenario={},
+        config={"base_url": "http://localhost:8000", "session_id": "test-session"},
+    )
+    with pytest.raises(RuntimeError) as excinfo:
+        target.respond([{"role": "user", "content": "hello"}])
+    assert "missing assistant text" in str(excinfo.value)
+
+
+def test_http_response_alt_key(monkeypatch):
+    _stub_http(
+        monkeypatch,
+        reply="hello",
+        audit={},
+        expected_mode="strict",
+        expected_profile="pii",
+        expected_lengths=[1],
+        response_key="assistant_message",
+    )
+    target = HttpTargetAdapter(
+        scenario={},
+        config={
+            "base_url": "http://localhost:8000",
+            "session_id": "test-session",
+            "leak_mode": "strict",
+            "leak_profile": "pii_basic",
+            "use_llm": False,
+        },
+    )
+    response = target.respond([{"role": "user", "content": "hello"}])
+    assert response["content"] == "hello"

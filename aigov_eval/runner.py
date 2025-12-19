@@ -63,6 +63,7 @@ def run_scenario(
     transcript: List[Dict[str, Any]] = []
     messages: List[Dict[str, str]] = []
     http_audit: Optional[List[Any]] = [] if target_name == "http" else None
+    http_raw_response: Optional[List[Any]] = [] if target_name == "http" else None
 
     auditor_seed = scenario.get("auditor_seed")
     if auditor_seed:
@@ -97,6 +98,8 @@ def run_scenario(
                 metadata["mock_audit"] = audit_payload
         if http_audit is not None:
             http_audit.append(metadata.get("http_audit"))
+        if http_raw_response is not None:
+            http_raw_response.append(metadata.get("http_raw_response"))
 
         messages.append({"role": "assistant", "content": assistant_content})
         transcript.append(_entry(turn_index, "assistant", assistant_content, metadata or None))
@@ -127,6 +130,7 @@ def run_scenario(
         runner_config=runner_config,
         mock_audit=mock_audit,
         http_audit=http_audit,
+        http_raw_response=http_raw_response,
     )
     write_evidence_pack(str(run_dir / "evidence_pack.json"), evidence_pack)
 

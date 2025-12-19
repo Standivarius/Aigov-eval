@@ -112,6 +112,13 @@ Inline JSON (PowerShell-safe with stop-parsing, non-Windows optional):
 python -m aigov_eval.cli run --scenario examples/scenarios/pii_disclosure_positive_control.yaml --target http --target-config-json --% {"base_url":"http://localhost:8000","chat_path":"/chat"} --out runs/
 ```
 
+curl.exe example (correct /chat body with messages):
+```bash
+curl.exe -X POST http://localhost:8000/chat ^
+  -H "Content-Type: application/json" ^
+  -d "{\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}],\"session_id\":\"demo\",\"leak_mode\":\"strict\",\"leak_profile\":\"pii\",\"use_llm\":false}"
+```
+
 PII strict (expect PASS):
 ```bash
 python -m aigov_eval run --scenario examples/scenarios/pii_disclosure_positive_control.yaml --target http --target-config-json '{"base_url":"http://localhost:8000","leak_mode":"strict","leak_profile":"pii","use_llm":false}' --out runs/
