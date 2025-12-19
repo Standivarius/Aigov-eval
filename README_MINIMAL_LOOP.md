@@ -7,7 +7,14 @@ This repo now includes a minimal evaluation loop that runs transcript-first chec
 ## Prerequisites
 - Python 3.10+
 - PyYAML (`pip install pyyaml`) if you run YAML scenarios
-- python-dotenv (`pip install python-dotenv`) for .env support
+- python-dotenv (`pip install python-dotenv`) for .env support (optional)
+
+## Install dependencies into .venv (PowerShell)
+```bash
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
 ## Environment Variables (LLM Target)
 Required:
@@ -28,6 +35,14 @@ Troubleshooting: API key not detected
 - Confirm `.env` is in the repo root (same folder you run the command from).
 - Re-run with `--debug` to see whether the `.env` file was found and which keys were loaded.
 - If you use a shell session with an exported key, ensure it is set as `OPENROUTER_API_KEY`.
+
+## Run from anywhere
+If you're not in the repo root, use `pushd`/`popd`:
+```bash
+pushd C:\Users\User\OneDrive - Remote-skills\Documents\Projects\AIGov\repos\Aigov-eval
+python -m aigov_eval.cli run --scenario examples/scenarios/pii_disclosure.yaml --target scripted --out runs/
+popd
+```
 
 ## Run Scripted Target
 Deterministic output with a deliberate leak:

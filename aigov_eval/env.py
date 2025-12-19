@@ -6,8 +6,10 @@ from typing import Dict, List, Optional
 
 try:
     from dotenv import dotenv_values, find_dotenv, load_dotenv
-except Exception as exc:  # pragma: no cover - dependency guard
-    raise RuntimeError("python-dotenv is required for .env support") from exc
+except Exception:  # pragma: no cover - optional dependency
+    dotenv_values = None
+    find_dotenv = None
+    load_dotenv = None
 
 
 _BOOTSTRAPPED = False
@@ -19,6 +21,19 @@ def init_env(debug: bool = False) -> Dict[str, Optional[object]]:
     if _BOOTSTRAPPED:
         if debug:
             _debug_print(_STATE)
+        return _STATE
+
+    if find_dotenv is None or load_dotenv is None or dotenv_values is None:
+        print(
+            "python-dotenv not installed; skipping .env loading "
+            "(install python-dotenv to enable .env support)."
+        )
+        _STATE = {
+            "dotenv_path": None,
+            "found": False,
+            "loaded_keys": [],
+        }
+        _BOOTSTRAPPED = True
         return _STATE
 
     env_path = find_dotenv()
