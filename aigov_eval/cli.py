@@ -90,8 +90,20 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
-def _load_target_config(raw: str) -> dict:
-    if os.path.exists(raw):
-        with open(raw, "r", encoding="utf-8") as handle:
-            return json.load(handle)
-    return json.loads(raw)
+def _load_target_config(raw: str | None) -> dict:
+    if not raw:
+        return {}
+    try:
+        if os.path.exists(raw):
+            with open(raw, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        else:
+            data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid --target-config-json: {exc.msg}") from exc
+    except OSError as exc:
+        raise SystemExit(f"Failed to read --target-config-json file: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise SystemExit("Invalid --target-config-json: expected a JSON object")
+    return data
