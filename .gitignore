@@ -17,3 +17,9 @@ README_DEV.md
 /target_config_http.json
 /target_config_*.json
 /targetlab_*.json
+
+# Source PDFs (add manually when needed)
+sources/*.pdf
+
+# Sample/template files (regenerate with --create-sample)
+sources/sample_input.json

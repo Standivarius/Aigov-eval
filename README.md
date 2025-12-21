@@ -75,6 +75,17 @@ Aigov-eval provides systematic testing and quality assurance for all AIGov audit
 Aigov-eval/
 ├── README.md (this file)
 ├── test-catalog.md (living list of all tests)
+├── sources/
+│   ├── GDPR & AI Cases and Guidance Dataset.pdf (source material)
+│   └── Aigov-eval Dataset Design.md (dataset schema specification)
+├── golden_set/
+│   └── gs_###.json (normalized case items)
+├── cases/
+│   └── gs_###__<qid>.json (executable test cases)
+├── taxonomy/
+│   └── signals.json (valid GDPR violation signals)
+├── tools/
+│   └── import_golden_set.py (dataset importer)
 ├── tests/
 │   ├── judge/
 │   ├── akg/
@@ -98,6 +109,53 @@ Aigov-eval/
 
 ## 🚀 Usage
 
+### Importing GDPR Dataset
+
+**Step 1**: Place your source PDF in the `sources/` directory:
+```
+sources/GDPR & AI Cases and Guidance Dataset.pdf
+```
+
+**Step 2**: Run the importer:
+```bash
+# Import all cases from PDF
+python tools/import_golden_set.py
+
+# Import specific range (items 1-10)
+python tools/import_golden_set.py --start 1 --end 10
+
+# Dry run (preview without writing files)
+python tools/import_golden_set.py --dry-run
+
+# Validate existing outputs
+python tools/import_golden_set.py --validate
+```
+
+**Alternative - Manual JSON Input**:
+
+If PDF parsing doesn't work or you prefer structured input:
+```bash
+# Create sample template
+python tools/import_golden_set.py --create-sample
+
+# Edit sources/sample_input.json with your data
+
+# Import from JSON
+python tools/import_golden_set.py --input-json sources/sample_input.json
+```
+
+**Output**:
+- `golden_set/gs_###.json` - Normalized case items with metadata
+- `cases/gs_###__<qid>.json` - Executable test cases (one per question)
+
+**Features**:
+- ✅ Automatic GDPR citation resolution (Art. 5(1)(a) → local docs)
+- ✅ Taxonomy validation (signals checked against `taxonomy/signals.json`)
+- ✅ Missing field detection (flags `needs_human_fill: true`)
+- ✅ Stdlib-only runtime (PDF parsing optional dependency)
+
+See `sources/Aigov-eval Dataset Design.md` for complete schema specification.
+
 ### Running Tests
 
 ```bash
@@ -112,6 +170,9 @@ python harness/runner.py --test TEST-J01
 
 # Run failed tests only
 python harness/runner.py --failed-only
+
+# Run importer tests
+pytest tests/test_import_golden_set.py -v
 ```
 
 ### Adding New Test

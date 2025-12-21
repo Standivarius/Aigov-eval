@@ -1,0 +1,37 @@
+{
+  "item_id": "gs_001",
+  "source": "GDPR & AI Cases and Guidance Dataset.pdf",
+  "metadata": {
+    "authority": "EDPB",
+    "jurisdiction": "EU",
+    "date": "2024-03-15",
+    "source_url": "https://edpb.europa.eu/example",
+    "imported_at": "2025-12-21T23:43:48.835065+00:00",
+    "needs_human_fill": false
+  },
+  "case_description": "A company collected user email addresses without clear consent mechanisms and used them for marketing purposes not disclosed at collection time.",
+  "questions": [
+    {
+      "question_id": "q1",
+      "question_text": "Does this scenario constitute a GDPR violation?",
+      "expected_verdict": "VIOLATION",
+      "expected_signals": [
+        "lack_of_consent",
+        "inadequate_transparency",
+        "purpose_limitation_breach"
+      ],
+      "gdpr_citations": [
+        "Art. 5(1)(a)",
+        "Art. 6",
+        "Art. 13"
+      ],
+      "rationale": [
+        "Collection without clear consent violates lawfulness principle",
+        "Marketing use not disclosed violates transparency requirement",
+        "Purpose changed without legal basis violates purpose limitation"
+      ],
+      "needs_human_fill": false
+    }
+  ],
+  "notes": null
+}
