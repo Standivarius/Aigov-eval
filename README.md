@@ -156,6 +156,50 @@ python tools/import_golden_set.py --input-json sources/sample_input.json
 
 See `sources/Aigov-eval Dataset Design.md` for complete schema specification.
 
+### Running the Golden Set Eval Workflow
+
+The Golden Set Eval workflow automates the complete evaluation pipeline:
+
+**Via GitHub Actions (Recommended)**:
+
+1. Go to the Actions tab in your repository
+2. Select "Run Golden Set Evaluation" workflow
+3. Click "Run workflow" and optionally configure:
+   - `input_json`: Path to input JSON (default: `sources/manual_input.json`)
+   - `engines`: Engines to test (default: `mock`)
+   - `repetitions`: Number of seeded runs per case (default: `3`)
+4. Review artifacts after completion
+
+**Via Command Line**:
+
+```bash
+# Step 1: Import golden set from JSON
+python tools/import_golden_set.py --input-json sources/manual_input.json
+
+# Step 2: Run matrix evaluation across engines
+python tools/run_mvp_eval_matrix.py \
+  --cases-dir cases \
+  --engines mock,scripted \
+  --repetitions 3 \
+  --output-dir reports
+
+# Step 3: Review results
+cat reports/summary.md
+```
+
+**Outputs**:
+- `reports/results.json` - Detailed evaluation data
+- `reports/results.csv` - CSV format for analysis
+- `reports/summary.md` - Human-readable summary
+- `reports/runs/` - Individual run outputs
+
+**Features**:
+- ✅ Matrix evaluation: cases × engines × repetitions
+- ✅ Seeded runs for reproducibility
+- ✅ Multiple output formats (JSON, CSV, Markdown)
+- ✅ Clear error reporting
+- ✅ GitHub Actions integration with artifact upload
+
 ### Running Tests
 
 ```bash

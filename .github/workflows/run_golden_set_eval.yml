@@ -1,0 +1,89 @@
+name: Run Golden Set Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_json:
+        description: 'Path to input JSON file for golden set import'
+        required: false
+        default: 'sources/manual_input.json'
+      engines:
+        description: 'Comma-separated list of engines to test (e.g., mock,scripted)'
+        required: false
+        default: 'mock'
+      repetitions:
+        description: 'Number of seeded repetitions per case'
+        required: false
+        default: '3'
+
+jobs:
+  golden-set-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest PyYAML requests
+
+      - name: Run initial tests
+        run: |
+          pytest -q
+
+      - name: Debug - List sources directory
+        run: |
+          ls -la
+          ls -la sources || true
+          echo "Using input JSON: ${{ github.event.inputs.input_json || 'sources/manual_input.json' }}"
+
+      - name: Run importer (dry run)
+        run: |
+          python tools/import_golden_set.py --input-json "${{ github.event.inputs.input_json || 'sources/manual_input.json' }}" --dry-run
+
+      - name: Run importer (write outputs)
+        run: |
+          python tools/import_golden_set.py --input-json "${{ github.event.inputs.input_json || 'sources/manual_input.json' }}"
+
+      - name: List generated cases
+        run: |
+          echo "Generated golden set items:"
+          ls -la golden_set/
+          echo ""
+          echo "Generated test cases:"
+          ls -la cases/
+
+      - name: Run matrix evaluation
+        run: |
+          python tools/run_mvp_eval_matrix.py \
+            --cases-dir cases \
+            --engines "${{ github.event.inputs.engines || 'mock' }}" \
+            --repetitions ${{ github.event.inputs.repetitions || '3' }} \
+            --output-dir reports
+
+      - name: Display evaluation summary
+        run: |
+          if [ -f reports/summary.md ]; then
+            echo "=== Evaluation Summary ==="
+            cat reports/summary.md
+          fi
+
+      - name: Run post-evaluation tests
+        run: |
+          pytest -q
+
+      - name: Upload evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-set-eval-outputs
+          path: |
+            golden_set/**
+            cases/**
+            reports/**
+          retention-days: 30
