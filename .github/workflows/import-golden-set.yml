@@ -1,0 +1,101 @@
+name: Import GDPR Golden Set
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_json:
+        description: 'Path to input JSON file'
+        required: false
+        default: 'sources/sample_input.json'
+      start_item:
+        description: 'Start at item number (optional)'
+        required: false
+      end_item:
+        description: 'End at item number (optional)'
+        required: false
+      dry_run:
+        description: 'Dry run (preview only, no files written)'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  import-golden-set:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          # PyPDF2 is optional for PDF mode
+          pip install PyPDF2 || echo "PyPDF2 installation failed, JSON mode only"
+
+      - name: Create sample input if needed
+        if: ${{ !github.event.inputs.input_json || github.event.inputs.input_json == 'sources/sample_input.json' }}
+        run: |
+          python tools/import_golden_set.py --create-sample
+
+      - name: Run importer (dry run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          python tools/import_golden_set.py \
+            --input-json "${{ github.event.inputs.input_json || 'sources/sample_input.json' }}" \
+            ${{ github.event.inputs.start_item && format('--start {0}', github.event.inputs.start_item) || '' }} \
+            ${{ github.event.inputs.end_item && format('--end {0}', github.event.inputs.end_item) || '' }} \
+            --dry-run
+
+      - name: Run importer (actual)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          python tools/import_golden_set.py \
+            --input-json "${{ github.event.inputs.input_json || 'sources/sample_input.json' }}" \
+            ${{ github.event.inputs.start_item && format('--start {0}', github.event.inputs.start_item) || '' }} \
+            ${{ github.event.inputs.end_item && format('--end {0}', github.event.inputs.end_item) || '' }}
+
+      - name: Validate outputs
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          python tools/import_golden_set.py --validate
+
+      - name: Test loader compatibility
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          python -c "
+          from aigov_eval.loader import load_scenario
+          from pathlib import Path
+
+          cases = list(Path('cases').glob('gs_*.json'))
+          if cases:
+              case = load_scenario(str(cases[0]))
+              print(f'✓ Loaded case: {case[\"scenario_id\"]}')
+          else:
+              print('No cases generated')
+          "
+
+      - name: Upload golden set artifacts
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-set-artifacts
+          path: |
+            golden_set/
+            cases/
+          retention-days: 30
+
+      - name: Generate summary
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          echo "### Import Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Golden Set Items**: $(ls -1 golden_set/gs_*.json 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Cases**: $(ls -1 cases/gs_*.json 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Artifacts uploaded successfully!" >> $GITHUB_STEP_SUMMARY

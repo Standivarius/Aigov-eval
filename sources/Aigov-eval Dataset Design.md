@@ -146,6 +146,17 @@ The importer includes a citation resolver that maps GDPR article/recital referen
 3. Generate repo-relative path
 4. No external network calls required
 
+### GDPR Documentation Location
+The generated citation links point to `legal/eu/gdpr/` in this repository. This directory contains:
+- **Stub files**: Placeholder markdown files for referenced articles/recitals
+- **Purpose**: Enable offline citation browsing and future expansion
+
+For complete GDPR text, refer to:
+- Official EUR-Lex: https://eur-lex.europa.eu/eli/reg/2016/679/oj
+- EDPB Guidelines: https://edpb.europa.eu/
+
+See `legal/eu/gdpr/README.md` for details on adding new articles/recitals.
+
 ## Taxonomy: GDPR Violation Signals
 
 The `taxonomy/signals.json` file defines valid violation signals that can be referenced in cases:

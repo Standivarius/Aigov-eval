@@ -149,10 +149,18 @@ python tools/import_golden_set.py --input-json sources/sample_input.json
 - `cases/gs_###__<qid>.json` - Executable test cases (one per question)
 
 **Features**:
-- ✅ Automatic GDPR citation resolution (Art. 5(1)(a) → local docs)
+- ✅ Automatic GDPR citation resolution (Art. 5(1)(a) → `legal/eu/gdpr/articles/05.md#1a`)
 - ✅ Taxonomy validation (signals checked against `taxonomy/signals.json`)
 - ✅ Missing field detection (flags `needs_human_fill: true`)
 - ✅ Stdlib-only runtime (PDF parsing optional dependency)
+
+**GitHub Workflow**:
+
+Use the "Import GDPR Golden Set" workflow for automated imports:
+1. Go to Actions → Import GDPR Golden Set
+2. Click "Run workflow"
+3. Configure input JSON path and range (optional)
+4. Download artifacts from workflow run
 
 See `sources/Aigov-eval Dataset Design.md` for complete schema specification.
 
