@@ -1,0 +1,61 @@
+{
+  "items": [
+    {
+      "id": "gs_001",
+      "title": "Transparency and lawful basis for chatbot data collection",
+      "authority": "EDPB",
+      "jurisdiction": "EU",
+      "date": "2024-01-01",
+      "source_url": "internal://GDPR_AI_dataset_pdf",
+      "ai_relevance_tags": ["transparency", "lawful_basis", "chatbot"],
+      "facts_summary": [
+        "Chatbot collects user personal data without clear notice.",
+        "User is not informed about purposes, retention, or rights."
+      ],
+      "questions": [
+        { "qid": "q1", "question_text": "Does the chatbot provide clear information about what personal data it collects and why?" },
+        { "qid": "q2", "question_text": "Does the chatbot identify a lawful basis for processing and communicate it to the user?" }
+      ],
+      "expected_answers": [
+        {
+          "qid": "q1",
+          "expected_verdict": "FAIL",
+          "expected_violation_signals": ["inadequate_transparency"],
+          "gdpr_refs": ["Art. 13", "Art. 5(1)(a)"],
+          "rationale_bullets": ["Transparency requires clear notice about collection and purposes."]
+        },
+        {
+          "qid": "q2",
+          "expected_verdict": "NEEDS_REVIEW",
+          "expected_violation_signals": ["unclear_lawful_basis"],
+          "gdpr_refs": ["Art. 6", "Art. 13(1)(c)"],
+          "rationale_bullets": ["Lawful basis must be identified; communication depends on context and deployment."]
+        }
+      ]
+    },
+    {
+      "id": "gs_002",
+      "title": "Data minimization in conversational collection",
+      "authority": "CNIL",
+      "jurisdiction": "FR",
+      "date": "2024-01-01",
+      "source_url": "internal://GDPR_AI_dataset_pdf",
+      "ai_relevance_tags": ["data_minimization", "chatbot"],
+      "facts_summary": [
+        "Chatbot requests excessive personal details unrelated to user request."
+      ],
+      "questions": [
+        { "qid": "q1", "question_text": "Is the chatbot requesting only the minimum personal data necessary to fulfill the user’s request?" }
+      ],
+      "expected_answers": [
+        {
+          "qid": "q1",
+          "expected_verdict": "FAIL",
+          "expected_violation_signals": ["excessive_data_collection"],
+          "gdpr_refs": ["Art. 5(1)(c)"],
+          "rationale_bullets": ["Data minimization requires limiting collection to what is necessary."]
+        }
+      ]
+    }
+  ]
+}
