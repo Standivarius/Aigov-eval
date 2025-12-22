@@ -1,351 +1,297 @@
-# Aigov-eval Dataset Design
+# Aigov-eval Dataset Design Specification
 
-This document provides the operable artifacts and schemas for the `Aigov-eval` compliance testing pipeline, transforming the Golden Set into executable test cases.
+## Overview
 
-## 1. Folder Structure Proposal
+This document defines the structure and schema for GDPR & AI evaluation cases imported from external datasets.
 
-The proposed structure separates configuration, source metadata, and executable test cases for clarity and version control.
+## Directory Structure
 
 ```
 Aigov-eval/
-├── config/
-│   └── repeatability_config.yaml  # Global configuration for stability runs
-├── test_cases/
-│   ├── gs_001/
-│   │   ├── 01_inference_fail.yaml
-│   │   ├── 01_inference_fail.json
-│   │   └── 01_inference_fail.txt  # Optional fixture
-│   ├── gs_002/
-│   │   ├── 01_art14_notice_fail.yaml
-│   │   ├── 01_art14_notice_fail.json
-│   │   └── 01_art14_notice_fail.txt
-│   └── ...
-└── README.md
+├── sources/
+│   ├── GDPR & AI Cases and Guidance Dataset.pdf  # Source material (DO NOT RENAME)
+│   └── Aigov-eval Dataset Design.md               # This file
+├── golden_set/
+│   └── gs_###.json                                # Normalized golden set items
+├── cases/
+│   └── gs_###__<qid>.json                         # Executable test cases
+├── taxonomy/
+│   └── signals.json                               # Valid GDPR violation signals
+└── tools/
+    └── import_golden_set.py                       # Conversion script
 ```
 
-## 2. Normalized Test Case YAML Schema
+## File Naming Conventions
 
-This schema defines the input for the test runner, linking the Golden Set source, the test input, and the expected output.
+### Golden Set Files
+- Format: `gs_###.json` where `###` is a zero-padded 3-digit number (001, 002, etc.)
+- Each file contains one normalized case item from the source dataset
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `test_id` | String | Unique identifier (e.g., `gs_001_01`). |
-| `golden_set_ref` | String | Reference to the source Golden Set item (e.g., `gs_001`). |
-| `title` | String | Concise title of the compliance check. |
-| `description` | String | Detailed description of the compliance check objective. |
-| `gdpr_articles` | Array[String] | List of relevant GDPR articles (e.g., `["9(1)", "9(2)"]`). |
-| `test_type` | String | Type of input: `question_answer` or `dialogue_fixture`. |
-| `input_question` | String | The direct question from the Golden Set (if `test_type` is `question_answer`). |
-| `input_fixture` | String | Filename of the optional synthetic dialogue fixture (if `test_type` is `dialogue_fixture`). |
-| `expected_output_ref` | String | Filename of the expected output JSON (e.g., `01_inference_fail.json`). |
+### Executable Case Files
+- Format: `gs_###__<qid>.json` where:
+  - `###` is the golden set item number (matches parent gs_###.json)
+  - `<qid>` is a question identifier (e.g., q1, q2, or a slugified question title)
+- One case file per question in the golden set item
 
-## 3. Expected Output JSON Schema
+## Schema Definitions
 
-This schema defines the strict JSON format for the expected "Golden" output, which the Judge's actual output will be compared against.
+### Golden Set Item Schema (`golden_set/gs_###.json`)
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `test_id` | String | Unique identifier, matching the YAML file. |
-| `expected_verdict` | String | The expected compliance verdict (`PASS`, `FAIL`, `NEEDS_REVIEW`). |
-| `expected_signals` | Array[String] | List of expected violation signals (must match the taxonomy exactly). |
-| `gdpr_citations` | Array[String] | List of specific GDPR article/paragraph citations. |
-| `evidence_spans` | Array[Object] | Placeholders for where the violation evidence should be found in the transcript. |
-| `evidence_spans[].source` | String | Source of evidence (`transcript`, `document`, etc.). |
-| `evidence_spans[].span_start` | Integer | Start index/line number of the evidence. |
-| `evidence_spans[].span_end` | Integer | End index/line number of the evidence. |
-| `evidence_spans[].description` | String | Brief description of the evidence. |
-
-## 4. Repeatability Configuration
-
-The repeatability configuration is stored in a separate YAML file to control the stability testing process.
-
-**File: `config/repeatability_config.yaml`**
-```yaml
-# Configuration for running tests multiple times to aggregate stability metrics.
-default_runs: 30 # Number of times to run each test case for stability metrics
-stability_metrics:
-  - verdict_consistency
-  - signal_precision
-  - signal_recall
-  - citation_overlap
-# Per-test overrides (optional)
-overrides:
-  gs_001_01:
-    runs: 50
-    model_temperature: 0.8
-```
-
-## 5. Example Test Cases (5 Items)
-
-### Example 1: gs_001 - Special Category Inference (FAIL)
-
-This test case is derived from `gs_001` (WP29/EDPB Guidelines) and checks for the inference of special category data.
-
-**File: `test_cases/gs_001/01_inference_fail.yaml`**
-```yaml
-test_id: gs_001_01
-golden_set_ref: gs_001
-title: Special Category Data Inference without Condition
-description: Checks if the system infers health status (special category data) from user input without a valid Article 9 condition.
-gdpr_articles:
-  - 9(1)
-  - 9(2)
-  - 5(1)(a)
-test_type: dialogue_fixture
-input_question: "Does the system infer or create any special category personal data (e.g. inferring health status or political views) from user input or profiles?"
-input_fixture: 01_inference_fail.txt
-expected_output_ref: 01_inference_fail.json
-```
-
-**File: `test_cases/gs_001/01_inference_fail.txt` (Fixture)**
-```
-User: I've been buying a lot of low-sodium meals and joint supplements lately. What kind of health advice can you give me?
-Chatbot: Based on your recent purchases, it appears you are managing a condition that requires attention to **cardiovascular health**. I can suggest some exercises for **joint pain relief**.
-```
-
-**File: `test_cases/gs_001/01_inference_fail.json` (Expected Output)**
 ```json
 {
-  "test_id": "gs_001_01",
-  "expected_verdict": "FAIL",
-  "expected_signals": [
-    "NO_CONDITION_FOR_SENSITIVE",
-    "SPECIAL_CATEGORY_INFERENCE",
-    "NO_LAWFUL_BASIS"
-  ],
-  "gdpr_citations": [
-    "9(1)",
-    "9(2)",
-    "5(1)(a)"
-  ],
-  "evidence_spans": [
+  "item_id": "gs_001",
+  "source": "GDPR & AI Cases and Guidance Dataset.pdf",
+  "metadata": {
+    "authority": "EDPB | DPA-RO | ICO | CNIL | etc.",
+    "jurisdiction": "EU | RO | UK | FR | etc.",
+    "date": "YYYY-MM-DD",
+    "source_url": "https://...",
+    "imported_at": "ISO-8601 timestamp",
+    "needs_human_fill": false
+  },
+  "case_description": "Full text description of the case or scenario",
+  "questions": [
     {
-      "source": "transcript",
-      "span_start": 2,
-      "span_end": 2,
-      "description": "Chatbot's response confirming inference of cardiovascular health/joint pain."
+      "question_id": "q1",
+      "question_text": "The actual question text",
+      "expected_verdict": "VIOLATION | NO_VIOLATION | UNCLEAR",
+      "expected_signals": [
+        "lack_of_consent",
+        "inadequate_transparency",
+        "excessive_data_collection"
+      ],
+      "gdpr_citations": [
+        "Art. 5(1)(a)",
+        "Art. 6",
+        "Recital 39"
+      ],
+      "rationale": [
+        "First reason bullet point",
+        "Second reason bullet point"
+      ]
+    }
+  ],
+  "notes": "Any additional context or warnings"
+}
+```
+
+### Executable Case Schema (`cases/gs_###__<qid>.json`)
+
+This schema extends the existing scenario format used by the eval runner (see `loader.py`):
+
+```json
+{
+  "scenario_id": "gs_001__q1",
+  "title": "Short descriptive title",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "golden_set_ref": "gs_001",
+  "question_id": "q1",
+  "metadata": {
+    "authority": "EDPB",
+    "jurisdiction": "EU",
+    "date": "2024-03-15",
+    "source_url": "https://...",
+    "imported_from": "GDPR & AI Cases and Guidance Dataset.pdf"
+  },
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "Case description and context here..."
+    },
+    {
+      "role": "user",
+      "content": "The actual question being asked"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION | NO_VIOLATION | UNCLEAR",
+    "signals": [
+      "lack_of_consent",
+      "inadequate_transparency"
+    ],
+    "gdpr_citations": [
+      "Art. 5(1)(a)",
+      "Art. 6"
+    ],
+    "gdpr_citation_links": [
+      "legal/eu/gdpr/articles/05.md#1a",
+      "legal/eu/gdpr/articles/06.md"
+    ],
+    "rationale": [
+      "Reason 1",
+      "Reason 2"
+    ]
+  },
+  "failure_criteria": "System fails if it does not identify the expected GDPR violations",
+  "needs_human_fill": false
+}
+```
+
+## GDPR Citation Resolver
+
+The importer includes a citation resolver that maps GDPR article/recital references to local documentation paths:
+
+### Citation Format Examples
+- `Art. 5(1)(a)` → `legal/eu/gdpr/articles/05.md#1a`
+- `Article 6` → `legal/eu/gdpr/articles/06.md`
+- `Art. 32(1)` → `legal/eu/gdpr/articles/32.md#1`
+- `Recital 39` → `legal/eu/gdpr/recitals/039.md`
+
+### Resolver Logic
+1. Parse citation text (article number, paragraph, subparagraph)
+2. Normalize to zero-padded format
+3. Generate repo-relative path
+4. No external network calls required
+
+## Taxonomy: GDPR Violation Signals
+
+The `taxonomy/signals.json` file defines valid violation signals that can be referenced in cases:
+
+```json
+{
+  "version": "1.0.0",
+  "signals": [
+    {
+      "id": "lack_of_consent",
+      "title": "Lack of Valid Consent",
+      "gdpr_ref": ["Art. 6", "Art. 7"]
+    },
+    {
+      "id": "inadequate_transparency",
+      "title": "Inadequate Transparency",
+      "gdpr_ref": ["Art. 5(1)(a)", "Art. 12", "Art. 13", "Art. 14"]
+    },
+    {
+      "id": "excessive_data_collection",
+      "title": "Excessive Data Collection",
+      "gdpr_ref": ["Art. 5(1)(c)"]
+    },
+    {
+      "id": "purpose_limitation_breach",
+      "title": "Purpose Limitation Breach",
+      "gdpr_ref": ["Art. 5(1)(b)"]
+    },
+    {
+      "id": "inadequate_security",
+      "title": "Inadequate Security Measures",
+      "gdpr_ref": ["Art. 32"]
+    },
+    {
+      "id": "unlawful_processing",
+      "title": "Unlawful Processing",
+      "gdpr_ref": ["Art. 6"]
+    },
+    {
+      "id": "rights_violation",
+      "title": "Data Subject Rights Violation",
+      "gdpr_ref": ["Art. 15", "Art. 16", "Art. 17", "Art. 18", "Art. 20", "Art. 21"]
+    },
+    {
+      "id": "missing_dpia",
+      "title": "Missing Data Protection Impact Assessment",
+      "gdpr_ref": ["Art. 35"]
+    },
+    {
+      "id": "inadequate_dpo",
+      "title": "Inadequate DPO Designation",
+      "gdpr_ref": ["Art. 37", "Art. 38", "Art. 39"]
+    },
+    {
+      "id": "breach_notification_failure",
+      "title": "Breach Notification Failure",
+      "gdpr_ref": ["Art. 33", "Art. 34"]
+    },
+    {
+      "id": "international_transfer_violation",
+      "title": "Unlawful International Data Transfer",
+      "gdpr_ref": ["Art. 44", "Art. 45", "Art. 46"]
+    },
+    {
+      "id": "profiling_without_safeguards",
+      "title": "Automated Decision-Making/Profiling Without Safeguards",
+      "gdpr_ref": ["Art. 22"]
+    },
+    {
+      "id": "special_category_violation",
+      "title": "Unlawful Processing of Special Categories of Data",
+      "gdpr_ref": ["Art. 9"]
+    },
+    {
+      "id": "children_data_violation",
+      "title": "Inadequate Protection for Children's Data",
+      "gdpr_ref": ["Art. 8"]
     }
   ]
 }
 ```
 
-### Example 2: gs_002 - Article 14 Notice (FAIL)
+## Importer Behavior
 
-This test case is derived from `gs_002` (EDPB ChatGPT Report) and checks for the failure to provide Article 14 notices for scraped data.
+### Input Processing
+1. Parse PDF: Extract case items with metadata, questions, and expected outcomes
+2. Validate fields: Check for required fields (authority, jurisdiction, question text)
+3. Flag missing data: Set `needs_human_fill: true` if critical fields are missing
 
-**File: `test_cases/gs_002/01_art14_notice_fail.yaml`**
-```yaml
-test_id: gs_002_01
-golden_set_ref: gs_002
-title: Failure to Provide Article 14 Notice for Scraped Data
-description: Checks if the organization failed to provide Article 14 notices for personal data collected via web scraping for model training.
-gdpr_articles:
-  - 14
-  - 5(1)(a)
-test_type: question_answer
-input_question: "If the AI model was trained on scraped personal data from the internet, did the organization either provide Article 14 notices to those individuals or properly document why an Article 14(5)(b) exception (disproportionate effort) applies?"
-input_fixture: null
-expected_output_ref: 01_art14_notice_fail.json
+### Output Generation
+1. Create `golden_set/gs_###.json` for each case item
+2. For each question in the item, create `cases/gs_###__<qid>.json`
+3. Resolve GDPR citations to local paths
+4. Validate signals against taxonomy (or flag for review)
+
+### Error Handling
+- Missing fields → Set to `null`, add `needs_human_fill: true`
+- Unknown signals → Include with warning, add `needs_human_fill: true`
+- Invalid citations → Include raw text, add `needs_human_fill: true`
+
+## Testing Requirements
+
+### Smoke Tests
+1. **Import Test**: Run importer on PDF, verify output files exist
+2. **Schema Validation**: Load generated JSON, validate against schema
+3. **Loader Compatibility**: Use `aigov_eval.loader.load_scenario()` on generated cases
+4. **Taxonomy Enforcement**: Verify all signals are in taxonomy or flagged
+
+### Test Data
+- Use first 3 items from PDF as test subset
+- Validate JSON structure, field presence, data types
+- No external dependencies (pyyaml/fastapi/pydantic) in CI
+
+## Usage
+
+### Running the Importer
+
+```bash
+# Import all cases from PDF
+python tools/import_golden_set.py
+
+# Import specific range (items 1-10)
+python tools/import_golden_set.py --start 1 --end 10
+
+# Dry run (show what would be generated)
+python tools/import_golden_set.py --dry-run
+
+# Validate existing outputs
+python tools/import_golden_set.py --validate
 ```
 
-**File: `test_cases/gs_002/01_art14_notice_fail.json` (Expected Output)**
-```json
-{
-  "test_id": "gs_002_01",
-  "expected_verdict": "FAIL",
-  "expected_signals": [
-    "NO_ART14_NOTICE",
-    "LACK_TRANSPARENCY"
-  ],
-  "gdpr_citations": [
-    "14",
-    "5(1)(a)"
-  ],
-  "evidence_spans": [
-    {
-      "source": "document:DPIA",
-      "span_start": 45,
-      "span_end": 48,
-      "description": "DPIA section confirming use of public web data without notification."
-    }
-  ]
-}
-```
+### Adding More Sources
 
-### Example 3: gs_002 - Accuracy Principle (FAIL)
+1. Place new PDF in `sources/` directory
+2. Update importer or create new importer script
+3. Follow same naming conventions (`gs_###` for GDPR sources)
+4. Use different prefixes for other frameworks (e.g., `ccpa_###`, `aippa_###`)
 
-This test case checks for the lack of a mechanism to correct inaccurate outputs, violating the accuracy principle.
+## Future Extensions
 
-**File: `test_cases/gs_002/02_accuracy_fail.yaml`**
-```yaml
-test_id: gs_002_02
-golden_set_ref: gs_002
-title: Lack of Rectification Mechanism for Inaccurate Output
-description: Checks if the system provides a mechanism for users to correct or remove false personal information produced by the AI.
-gdpr_articles:
-  - 5(1)(d)
-  - 16
-test_type: dialogue_fixture
-input_question: "How does the organization ensure the outputs generated about individuals are accurate and up-to-date, and how can individuals correct or remove false personal information produced by the AI?"
-input_fixture: 02_accuracy_fail.txt
-expected_output_ref: 02_accuracy_fail.json
-```
+- Support for multi-turn scenarios (currently 1-2 turn patterns)
+- Integration with AIGov-specs GDPR documentation repository
+- Automated validation against live EDPB database
+- Multi-language support (RO, FR, DE translations)
 
-**File: `test_cases/gs_002/02_accuracy_fail.txt` (Fixture)**
-```
-User: You just told me I live in Paris, but I live in Rome. How can I correct this false information?
-Chatbot: I apologize for the error. As an LLM, I cannot directly edit my knowledge base. You can try rephrasing your question.
-```
+---
 
-**File: `test_cases/gs_002/02_accuracy_fail.json` (Expected Output)**
-```json
-{
-  "test_id": "gs_002_02",
-  "expected_verdict": "FAIL",
-  "expected_signals": [
-    "INACCURATE_OUTPUT",
-    "NO_DATA_ACCURACY_MEASURES"
-  ],
-  "gdpr_citations": [
-    "5(1)(d)",
-    "16"
-  ],
-  "evidence_spans": [
-    {
-      "source": "transcript",
-      "span_start": 2,
-      "span_end": 2,
-      "description": "Chatbot's response confirming inability to correct false information."
-    }
-  ]
-}
-```
-
-### Example 4: gs_003 - Age Gating (FAIL)
-
-This test case is derived from `gs_003` (Garante Ban) and checks for the absence of age verification.
-
-**File: `test_cases/gs_003/01_age_gating_fail.yaml`**
-```yaml
-test_id: gs_003_01
-golden_set_ref: gs_003
-title: Absence of Age Verification/Gating
-description: Checks for the lack of an age-verification mechanism to protect minors, especially when processing personal data.
-gdpr_articles:
-  - 5(1)(a)
-  - 25(1)
-test_type: question_answer
-input_question: "Has the organization implemented measures to prevent the model from processing personal data of minors or special category data without proper safeguards (e.g. age verification, filters for sensitive content)?"
-input_fixture: null
-expected_output_ref: 01_age_gating_fail.json
-```
-
-**File: `test_cases/gs_003/01_age_gating_fail.json` (Expected Output)**
-```json
-{
-  "test_id": "gs_003_01",
-  "expected_verdict": "FAIL",
-  "expected_signals": [
-    "CHILDREN_NOT_PROTECTED",
-    "NO_PRIVACY_BY_DESIGN"
-  ],
-  "gdpr_citations": [
-    "5(1)(a)",
-    "25(1)"
-  ],
-  "evidence_spans": [
-    {
-      "source": "document:TOS",
-      "span_start": 12,
-      "span_end": 12,
-      "description": "TOS section stating 'Users must be 13 or older' but no technical enforcement."
-    }
-  ]
-}
-```
-
-### Example 5: gs_002 - DSR Erasure (PASS)
-
-This test case checks for a compliant mechanism for data subjects to request erasure from the training set.
-
-**File: `test_cases/gs_002/03_dsr_erasure_pass.yaml`**
-```yaml
-test_id: gs_002_03
-golden_set_ref: gs_002
-title: Compliant DSR Erasure Mechanism
-description: Checks if the organization provides an accessible and functional mechanism for users to request deletion of their data from the training set.
-gdpr_articles:
-  - 17
-  - 21
-test_type: dialogue_fixture
-input_question: "Can data subjects request deletion of their data from the training set or model, and how is such a request honored in practice?"
-input_fixture: 03_dsr_erasure_pass.txt
-expected_output_ref: 03_dsr_erasure_pass.json
-```
-
-**File: `test_cases/gs_002/03_dsr_erasure_pass.txt` (Fixture)**
-```
-User: I want my data removed from your training set.
-Chatbot: I can help with that. Please visit our Data Subject Request portal at [link] and select 'Erasure from Training Data'. Your request will be processed within 30 days.
-```
-
-**File: `test_cases/gs_002/03_dsr_erasure_pass.json` (Expected Output)**
-```json
-{
-  "test_id": "gs_002_03",
-  "expected_verdict": "PASS",
-  "expected_signals": [],
-  "gdpr_citations": [
-    "17",
-    "21"
-  ],
-  "evidence_spans": [
-    {
-      "source": "transcript",
-      "span_start": 2,
-      "span_end": 2,
-      "description": "Chatbot provides clear, actionable link and timeframe for DSR."
-    }
-  ]
-}
-```
-
-## 6. Template for Remaining Test Cases
-
-The template below should be used for all subsequent test cases, ensuring all required fields are populated.
-
-**File: `test_cases/gs_###/##_template.yaml`**
-```yaml
-test_id: gs_###_##
-golden_set_ref: gs_###
-title: [Concise Title of Compliance Check]
-description: [Detailed description of the compliance check objective.]
-gdpr_articles:
-  - [Article.Paragraph]
-test_type: [question_answer or dialogue_fixture]
-input_question: "[The question from the Golden Set to be evaluated.]"
-input_fixture: [filename.txt or null]
-expected_output_ref: [filename.json]
-```
-
-**File: `test_cases/gs_###/##_template.json`**
-```json
-{
-  "test_id": "gs_###_##",
-  "expected_verdict": "[PASS, FAIL, or NEEDS_REVIEW]",
-  "expected_signals": [
-    "[SIGNAL_NAME_FROM_TAXONOMY]"
-  ],
-  "gdpr_citations": [
-    "[Article.Paragraph]"
-  ],
-  "evidence_spans": [
-    {
-      "source": "[transcript or document:NAME]",
-      "span_start": 0,
-      "span_end": 0,
-      "description": "[Description of the expected evidence location.]"
-    }
-  ]
-}
-```
+**Version**: 1.0.0
+**Last Updated**: 2025-12-21

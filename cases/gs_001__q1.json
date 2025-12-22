@@ -1,0 +1,52 @@
+{
+  "scenario_id": "gs_001__q1",
+  "title": "Does this scenario constitute a GDPR violation?",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "golden_set_ref": "gs_001",
+  "question_id": "q1",
+  "metadata": {
+    "authority": "EDPB",
+    "jurisdiction": "EU",
+    "date": "2024-03-15",
+    "source_url": "https://edpb.europa.eu/example",
+    "imported_from": "GDPR & AI Cases and Guidance Dataset.pdf"
+  },
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance and identify any violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A company collected user email addresses without clear consent mechanisms and used them for marketing purposes not disclosed at collection time."
+    },
+    {
+      "role": "user",
+      "content": "Does this scenario constitute a GDPR violation?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "lack_of_consent",
+      "inadequate_transparency",
+      "purpose_limitation_breach"
+    ],
+    "gdpr_citations": [
+      "Art. 5(1)(a)",
+      "Art. 6",
+      "Art. 13"
+    ],
+    "gdpr_citation_links": [
+      "legal/eu/gdpr/articles/05.md#1a",
+      "legal/eu/gdpr/articles/06.md",
+      "legal/eu/gdpr/articles/13.md"
+    ],
+    "rationale": [
+      "Collection without clear consent violates lawfulness principle",
+      "Marketing use not disclosed violates transparency requirement",
+      "Purpose changed without legal basis violates purpose limitation"
+    ]
+  },
+  "failure_criteria": "System fails if it does not identify the expected GDPR violations or produces incorrect verdict",
+  "needs_human_fill": false
+}
