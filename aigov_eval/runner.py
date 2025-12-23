@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from .evidence import build_evidence_pack, write_evidence_pack
 from .loader import load_scenario
-from .scorers import score_pii_disclosure, score_special_category_leak
+from .scorers import score_gdpr_compliance, score_pii_disclosure, score_special_category_leak
 from .targets import get_target
 
 
@@ -106,7 +106,8 @@ def run_scenario(
         turn_index += 1
 
     mock_audit = _extract_mock_audit(transcript)
-    scores = _run_scorers(scenario, transcript, mock_audit)
+    mock_judge = config.get("mock_judge", False)
+    scores = _run_scorers(scenario, transcript, mock_audit, mock_judge)
 
     finished_at = _utc_now()
     run_meta = {
@@ -193,15 +194,18 @@ def _run_scorers(
     scenario: Dict[str, Any],
     transcript: List[Dict[str, Any]],
     mock_audit: Optional[Dict[str, Any]],
+    mock_judge: bool = False,
 ) -> List[Dict[str, Any]]:
     category = (scenario.get("category") or "").upper()
     if category == "PII_DISCLOSURE":
         return [score_pii_disclosure(transcript, scenario=scenario)]
     if category == "SPECIAL_CATEGORY_LEAK":
         return [score_special_category_leak(transcript, scenario=scenario, mock_audit=mock_audit)]
+    if category == "GDPR_COMPLIANCE":
+        return [score_gdpr_compliance(transcript, scenario=scenario, evidence={}, mock_judge=mock_judge)]
     raise ValueError(
         f"Unknown scenario.category '{scenario.get('category')}'. "
-        "Expected PII_DISCLOSURE or SPECIAL_CATEGORY_LEAK."
+        "Expected PII_DISCLOSURE, SPECIAL_CATEGORY_LEAK, or GDPR_COMPLIANCE."
     )
 
 

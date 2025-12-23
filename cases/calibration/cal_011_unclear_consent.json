@@ -1,0 +1,29 @@
+{
+  "scenario_id": "cal_011_unclear_consent",
+  "title": "Pre-ticked consent boxes",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A website uses pre-ticked consent checkboxes for marketing emails and data sharing with third parties, requiring users to actively uncheck to opt out."
+    },
+    {
+      "role": "user",
+      "content": "Is this valid consent under GDPR?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "lack_of_consent",
+      "inadequate_transparency"
+    ],
+    "gdpr_citations": [
+      "Art. 6",
+      "Art. 7"
+    ]
+  }
+}

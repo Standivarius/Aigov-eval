@@ -1,0 +1,27 @@
+{
+  "scenario_id": "cal_008_excessive_retention",
+  "title": "Indefinite data retention without justification",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A company retains customer personal data indefinitely, even after the customer relationship has ended and there is no legal requirement to keep the data."
+    },
+    {
+      "role": "user",
+      "content": "Is this a GDPR violation?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "excessive_data_retention"
+    ],
+    "gdpr_citations": [
+      "Art. 5(1)(e)"
+    ]
+  }
+}

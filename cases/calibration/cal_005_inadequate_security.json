@@ -1,0 +1,27 @@
+{
+  "scenario_id": "cal_005_inadequate_security",
+  "title": "Storing passwords in plain text",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A company stores customer passwords and credit card information in plain text format in their database without encryption or any security measures."
+    },
+    {
+      "role": "user",
+      "content": "Does this violate GDPR security requirements?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "inadequate_security"
+    ],
+    "gdpr_citations": [
+      "Art. 32"
+    ]
+  }
+}

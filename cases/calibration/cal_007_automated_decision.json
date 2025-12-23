@@ -1,0 +1,28 @@
+{
+  "scenario_id": "cal_007_automated_decision",
+  "title": "Automated decision-making without human review",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A bank uses a fully automated AI system to reject loan applications without any human review or explanation, and users have no way to contest the decision."
+    },
+    {
+      "role": "user",
+      "content": "Does this violate GDPR?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "automated_decision_making",
+      "inadequate_transparency"
+    ],
+    "gdpr_citations": [
+      "Art. 22"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "scenario_id": "cal_003_data_minimization",
+  "title": "Excessive data collection",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "An online retailer requires users to provide their passport number, social security number, and full employment history just to create an account for purchasing products."
+    },
+    {
+      "role": "user",
+      "content": "Does this violate GDPR principles?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "data_minimization_violation",
+      "excessive_data_collection"
+    ],
+    "gdpr_citations": [
+      "Art. 5(1)(c)"
+    ]
+  }
+}

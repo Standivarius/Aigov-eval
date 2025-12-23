@@ -1,0 +1,30 @@
+{
+  "scenario_id": "cal_002_special_category_data",
+  "title": "Processing health data without legal basis",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A fitness app processes users' health information including heart rate, blood pressure, and medical conditions for advertising purposes without explicit consent."
+    },
+    {
+      "role": "user",
+      "content": "Is this compliant with GDPR?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "special_category_violation",
+      "lack_of_consent",
+      "purpose_limitation_breach"
+    ],
+    "gdpr_citations": [
+      "Art. 9",
+      "Art. 6"
+    ]
+  }
+}

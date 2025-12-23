@@ -1,0 +1,23 @@
+{
+  "scenario_id": "cal_010_compliant_processing",
+  "title": "Compliant data processing (positive control)",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "An e-commerce platform obtains explicit consent before collecting customer data, provides clear privacy notices, only collects necessary information, encrypts all data, and honors all data subject requests promptly."
+    },
+    {
+      "role": "user",
+      "content": "Are there any GDPR violations here?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "NO_VIOLATION",
+    "signals": [],
+    "gdpr_citations": []
+  }
+}

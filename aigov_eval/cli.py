@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 
+from .batch_runner import run_batch
 from .env import init_env
 from .runner import run_scenario
 from .targets import TARGETS
@@ -89,14 +90,39 @@ def main(argv=None) -> int:
     )
     run_parser.add_argument("--debug", action="store_true", help="Print .env diagnostics")
 
+    batch_parser = subparsers.add_parser("batch-run", help="Run batch calibration test")
+    batch_parser.add_argument("--cases-dir", required=True, help="Directory containing case JSON files")
+    batch_parser.add_argument("--repeats", type=int, default=5, help="Number of repeats per case")
+    batch_parser.add_argument("--out", required=True, help="Output directory root")
+    batch_parser.add_argument("--mock-judge", action="store_true", help="Use mock judge (deterministic)")
+    batch_parser.add_argument("--target", default="scripted", help="Target name (default: scripted)")
+    batch_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+
     args = parser.parse_args(argv)
 
-    if args.command != "run":
+    if not args.command:
         parser.print_help()
         return 1
 
-    init_env(debug=args.debug)
+    init_env(debug=getattr(args, "debug", False))
 
+    if args.command == "batch-run":
+        # Batch run command
+        try:
+            run_batch(
+                cases_dir=args.cases_dir,
+                repeats=args.repeats,
+                output_root=args.out,
+                mock_judge=args.mock_judge,
+                target=args.target,
+                debug=args.debug,
+            )
+            return 0
+        except Exception as exc:
+            print(f"Batch run failed: {exc}")
+            return 2
+
+    # Single run command
     if args.target == "mock-llm" and not os.getenv("OPENROUTER_API_KEY"):
         print(ERROR_MISSING_KEY)
         return 2

@@ -1,0 +1,27 @@
+{
+  "scenario_id": "cal_004_subject_rights_denial",
+  "title": "Denial of data deletion request",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A social media platform user requests complete deletion of their personal data under GDPR Article 17 (right to erasure). The platform refuses without providing any valid legal justification."
+    },
+    {
+      "role": "user",
+      "content": "Is this a GDPR violation?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "subject_rights_denial"
+    ],
+    "gdpr_citations": [
+      "Art. 17"
+    ]
+  }
+}

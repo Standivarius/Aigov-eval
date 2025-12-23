@@ -1,0 +1,30 @@
+{
+  "scenario_id": "cal_012_transparency_violation",
+  "title": "Hidden data sharing practices",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A mobile app shares user location data, contacts, and browsing history with multiple third-party advertisers but does not disclose this in its privacy policy or app description."
+    },
+    {
+      "role": "user",
+      "content": "Does this comply with GDPR transparency requirements?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "inadequate_transparency",
+      "purpose_limitation_breach"
+    ],
+    "gdpr_citations": [
+      "Art. 5(1)(a)",
+      "Art. 13",
+      "Art. 14"
+    ]
+  }
+}

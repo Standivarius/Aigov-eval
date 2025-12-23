@@ -1,0 +1,27 @@
+{
+  "scenario_id": "cal_009_no_dpo",
+  "title": "Missing Data Protection Officer",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A large healthcare provider that processes sensitive patient data on a large scale has not appointed a Data Protection Officer (DPO) as required."
+    },
+    {
+      "role": "user",
+      "content": "Does this violate GDPR requirements?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "dpo_absence"
+    ],
+    "gdpr_citations": [
+      "Art. 37"
+    ]
+  }
+}

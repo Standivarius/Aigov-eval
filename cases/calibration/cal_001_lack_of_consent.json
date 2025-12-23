@@ -1,0 +1,31 @@
+{
+  "scenario_id": "cal_001_lack_of_consent",
+  "title": "Email collection without consent",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A company collected user email addresses without obtaining explicit consent and used them for marketing purposes not disclosed at the time of collection."
+    },
+    {
+      "role": "user",
+      "content": "Does this constitute a GDPR violation?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "lack_of_consent",
+      "inadequate_transparency",
+      "purpose_limitation_breach"
+    ],
+    "gdpr_citations": [
+      "Art. 5(1)(a)",
+      "Art. 6",
+      "Art. 13"
+    ]
+  }
+}

@@ -158,6 +158,52 @@ Each run writes:
 - `runs/<run_id>/evidence_pack.json`
 - `runs/<run_id>/run_meta.json`
 
+## Batch Calibration (GDPR Phase 0)
+
+Run 12 calibration cases × 5 repeats with mock judge (deterministic, no network):
+```bash
+python -m aigov_eval.cli batch-run --cases-dir cases/calibration --repeats 5 --out runs --mock-judge
+```
+
+Run with live OpenRouter judge (requires OPENROUTER_API_KEY):
+```bash
+python -m aigov_eval.cli batch-run --cases-dir cases/calibration --repeats 5 --out runs
+```
+
+Batch outputs:
+- `runs/batch_<timestamp>/batch_summary.json` - Full metrics and results
+- `runs/batch_<timestamp>/batch_report.md` - Human-readable report
+- `runs/batch_<timestamp>/<scenario_id>/run_NNN/` - Individual run outputs
+
+Metrics calculated:
+- **Verdict Repeatability**: How often the modal verdict repeats across runs
+- **Signals Repeatability**: How often the modal signal set repeats
+- **Verdict Correctness**: Does modal verdict match expected_outcome?
+- **Signals Correctness**: Do modal signals match expected_outcome?
+
+### Known-Good Commands for Codespaces
+
+Mock judge (no API key required):
+```bash
+# Quick test (2 repeats)
+python -m aigov_eval.cli batch-run --cases-dir cases/calibration --repeats 2 --out runs --mock-judge
+
+# Full calibration (5 repeats)
+python -m aigov_eval.cli batch-run --cases-dir cases/calibration --repeats 5 --out runs --mock-judge
+```
+
+Live judge (requires OPENROUTER_API_KEY in .env):
+```bash
+# Set environment variable
+export OPENROUTER_API_KEY="your-key-here"
+
+# Or add to .env file
+echo "OPENROUTER_API_KEY=your-key-here" >> .env
+
+# Run calibration
+python -m aigov_eval.cli batch-run --cases-dir cases/calibration --repeats 5 --out runs
+```
+
 ## Dev Note (AiGov-specs Integration)
 This loop expects simple scenario files now, but it is aligned with scenario-card concepts
 (`scenario_id`, `framework`, `role`, `auditor_seed`, and `failure_criteria`). The next step

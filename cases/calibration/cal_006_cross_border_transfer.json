@@ -1,0 +1,29 @@
+{
+  "scenario_id": "cal_006_cross_border_transfer",
+  "title": "Illegal data transfer to third country",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "An EU-based company transfers personal data of European citizens to a data center in a country without adequate data protection laws, without using Standard Contractual Clauses or obtaining consent."
+    },
+    {
+      "role": "user",
+      "content": "Is this compliant with GDPR?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "signals": [
+      "cross_border_transfer_violation"
+    ],
+    "gdpr_citations": [
+      "Art. 44",
+      "Art. 45",
+      "Art. 46"
+    ]
+  }
+}
