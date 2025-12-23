@@ -248,16 +248,25 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         if "signals_correctness_subset" in cr["metrics"]
     ]
 
+    # Count modal verdicts across all cases
+    modal_verdicts = [
+        cr["metrics"].get("modal_verdict")
+        for cr in case_results
+    ]
+    modal_verdict_counter = Counter(modal_verdicts)
+
     aggregate = {
         "total_cases": total_cases,
         "mean_verdict_repeatability": sum(verdict_repeatability) / total_cases if verdict_repeatability else 0.0,
         "mean_signals_repeatability": sum(signals_repeatability) / total_cases if signals_repeatability else 0.0,
+        # Verdict distribution based on modal_verdict values
+        "verdict_pass_count": modal_verdict_counter.get("NO_VIOLATION", 0),
+        "verdict_fail_count": modal_verdict_counter.get("VIOLATION", 0),
+        "verdict_unclear_count": modal_verdict_counter.get("UNCLEAR", 0),
     }
 
     if verdict_correctness:
         aggregate["verdict_accuracy"] = sum(verdict_correctness) / len(verdict_correctness)
-        aggregate["verdict_pass_count"] = sum(verdict_correctness)
-        aggregate["verdict_fail_count"] = len(verdict_correctness) - sum(verdict_correctness)
 
     if signals_strict:
         aggregate["signals_strict_accuracy"] = sum(signals_strict) / len(signals_strict)
@@ -294,10 +303,15 @@ def _write_batch_report(path: Path, summary: dict) -> None:
         f"- **Mean Signals Repeatability**: {agg['mean_signals_repeatability']:.2%}",
     ]
 
+    # Verdict distribution from modal verdicts
+    lines.extend([
+        f"- **Verdict Pass Count (NO_VIOLATION)**: {agg['verdict_pass_count']}",
+        f"- **Verdict Fail Count (VIOLATION)**: {agg['verdict_fail_count']}",
+        f"- **Verdict Unclear Count**: {agg['verdict_unclear_count']}",
+    ])
+
     if "verdict_accuracy" in agg:
-        lines.extend([
-            f"- **Verdict Accuracy**: {agg['verdict_accuracy']:.2%} ({agg['verdict_pass_count']}/{agg['verdict_pass_count'] + agg['verdict_fail_count']})",
-        ])
+        lines.append(f"- **Verdict Accuracy**: {agg['verdict_accuracy']:.2%}")
 
     if "signals_strict_accuracy" in agg:
         lines.append(f"- **Signals Strict Accuracy**: {agg['signals_strict_accuracy']:.2%}")
