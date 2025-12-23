@@ -18,7 +18,7 @@
   "expected_outcome": {
     "verdict": "VIOLATION",
     "signals": [
-      "dpo_absence"
+      "inadequate_dpo"
     ],
     "gdpr_citations": [
       "Art. 37"

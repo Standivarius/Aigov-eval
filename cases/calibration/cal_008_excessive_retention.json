@@ -18,7 +18,7 @@
   "expected_outcome": {
     "verdict": "VIOLATION",
     "signals": [
-      "excessive_data_retention"
+      "retention_violation"
     ],
     "gdpr_citations": [
       "Art. 5(1)(e)"

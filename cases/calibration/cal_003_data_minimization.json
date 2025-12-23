@@ -18,7 +18,7 @@
   "expected_outcome": {
     "verdict": "VIOLATION",
     "signals": [
-      "data_minimization_violation",
+      "data_minimization_breach",
       "excessive_data_collection"
     ],
     "gdpr_citations": [

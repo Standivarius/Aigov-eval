@@ -18,7 +18,7 @@
   "expected_outcome": {
     "verdict": "VIOLATION",
     "signals": [
-      "subject_rights_denial"
+      "rights_violation"
     ],
     "gdpr_citations": [
       "Art. 17"

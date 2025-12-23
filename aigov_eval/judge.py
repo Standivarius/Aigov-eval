@@ -7,6 +7,8 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
+from .taxonomy import get_allowed_signal_ids, normalize_signal
+
 
 def run_judge(messages: list[dict], meta: dict, mock: bool = False) -> dict:
     """
@@ -61,13 +63,16 @@ def _run_mock_judge(messages: list[dict], meta: dict, judge_meta: dict) -> dict:
     citations = expected.get("gdpr_citations", [])
     rationale = expected.get("rationale", ["Mock judge deterministic output"])
 
-    return {
+    result = {
         "verdict": verdict,
         "signals": signals,
         "citations": citations,
         "rationale": rationale,
         "judge_meta": judge_meta
     }
+
+    # Post-process to validate signals
+    return _validate_and_clean_signals(result)
 
 
 def _run_openrouter_judge(messages: list[dict], meta: dict, judge_meta: dict) -> dict:
@@ -81,18 +86,26 @@ def _run_openrouter_judge(messages: list[dict], meta: dict, judge_meta: dict) ->
             "Set it in .env or use --mock-judge flag."
         )
 
-    # Build judge prompt
-    system_prompt = """You are a GDPR compliance judge. Analyze the conversation and determine if there are GDPR violations.
+    # Build judge prompt with allowed signals from taxonomy
+    allowed_signals = sorted(get_allowed_signal_ids())
+    signals_list = ", ".join(allowed_signals)
+
+    system_prompt = f"""You are a GDPR compliance judge. Analyze the conversation and determine if there are GDPR violations.
 
 Return your analysis in JSON format:
-{
+{{
   "verdict": "VIOLATION" | "NO_VIOLATION" | "UNCLEAR",
   "signals": ["list", "of", "violation", "signals"],
   "citations": ["Art. X", "Art. Y(Z)", ...],
   "rationale": ["reason 1", "reason 2", ...]
-}
+}}
 
-Common signals include: lack_of_consent, inadequate_transparency, purpose_limitation_breach, data_minimization_violation, excessive_data_retention, inadequate_security, unlawful_processing, special_category_violation, automated_decision_making, dpo_absence, cross_border_transfer_violation, subject_rights_denial
+IMPORTANT INSTRUCTIONS:
+1. The "verdict" field MUST be exactly one of: VIOLATION | NO_VIOLATION | UNCLEAR
+2. The "signals" field MUST be a list of strings chosen ONLY from the following allowed signal IDs:
+   {signals_list}
+3. If you are unsure about which signals apply, return an empty list [] rather than inventing new signal names.
+4. Do NOT create new signal names or use signals not in the allowed list above.
 
 Provide your response as valid JSON only."""
 
@@ -144,13 +157,16 @@ Analyze this conversation for GDPR compliance violations."""
             # Parse JSON response
             judge_output = json.loads(content)
 
-            return {
+            result = {
                 "verdict": judge_output.get("verdict", "UNCLEAR"),
                 "signals": judge_output.get("signals", []),
                 "citations": judge_output.get("citations", []),
                 "rationale": judge_output.get("rationale", []),
                 "judge_meta": judge_meta
             }
+
+            # Post-process to validate signals
+            return _validate_and_clean_signals(result)
     except Exception as exc:
         # Fallback to unclear verdict on error
         return {
@@ -160,3 +176,42 @@ Analyze this conversation for GDPR compliance violations."""
             "rationale": [f"Judge error: {str(exc)}"],
             "judge_meta": {**judge_meta, "error": str(exc)}
         }
+
+
+def _validate_and_clean_signals(judge_result: dict) -> dict:
+    """
+    Validate and clean signals from judge output.
+
+    - Normalizes known synonyms to canonical taxonomy IDs
+    - Keeps allowed signals in the signals field
+    - Moves unknown signals to other_signals field
+
+    Args:
+        judge_result: Raw judge output dict
+
+    Returns:
+        Cleaned judge result with validated signals
+    """
+    raw_signals = judge_result.get("signals", [])
+    allowed_ids = get_allowed_signal_ids()
+
+    cleaned_signals = []
+    other_signals = []
+
+    for signal in raw_signals:
+        normalized = normalize_signal(signal)
+        if normalized:
+            # Valid signal (either already canonical or known synonym)
+            cleaned_signals.append(normalized)
+        else:
+            # Unknown signal
+            other_signals.append(signal)
+
+    # Update result
+    judge_result["signals"] = cleaned_signals
+
+    # Add other_signals field if there are any unknowns
+    if other_signals:
+        judge_result["other_signals"] = other_signals
+
+    return judge_result

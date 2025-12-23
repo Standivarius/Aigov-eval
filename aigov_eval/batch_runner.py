@@ -12,6 +12,7 @@ from typing import Any
 
 from .loader import load_scenario
 from .runner import run_scenario
+from .taxonomy import get_taxonomy_version
 
 
 def run_batch(
@@ -57,6 +58,10 @@ def run_batch(
     git_sha = _get_git_sha()
     python_version = _get_python_version()
 
+    # Load first case to extract framework_id
+    first_scenario = load_scenario(str(case_files[0])) if case_files else {}
+    framework_id = first_scenario.get("framework", "gdpr").lower()
+
     batch_meta = {
         "batch_id": batch_id,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -67,6 +72,9 @@ def run_batch(
         "git_sha": git_sha,
         "python_version": python_version,
         "total_cases": len(case_files),
+        "framework_id": framework_id,
+        "taxonomy_version": get_taxonomy_version(),
+        "rubric_id": "gdpr_phase0_v1",
     }
 
     # Run all cases
