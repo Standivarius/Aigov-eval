@@ -22,6 +22,13 @@
       "lack_of_consent",
       "purpose_limitation_breach"
     ],
+    "required_signals": [
+      "special_category_violation",
+      "lack_of_consent"
+    ],
+    "allowed_extra_signals": [
+      "purpose_limitation_breach"
+    ],
     "gdpr_citations": [
       "Art. 9",
       "Art. 6"

@@ -156,3 +156,178 @@ def test_verdict_counts_independent_of_correctness():
 
     # Correctness should still be calculated separately
     assert aggregate["verdict_accuracy"] == 1.0, "All verdicts were correct"
+
+
+def test_case_results_contain_observability_fields():
+    """Test that case_results contain expected observability fields."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run_batch(
+            cases_dir="cases/calibration",
+            repeats=1,
+            output_root=tmpdir,
+            mock_judge=True,
+            target="scripted",
+            debug=False,
+        )
+
+        # Check that all case results have the observability fields
+        for case_result in result["case_results"]:
+            assert "expected_required_signals" in case_result, \
+                f"Missing expected_required_signals in {case_result['scenario_id']}"
+            assert "expected_allowed_extra_signals" in case_result, \
+                f"Missing expected_allowed_extra_signals in {case_result['scenario_id']}"
+            assert "missing_required_signals" in case_result, \
+                f"Missing missing_required_signals in {case_result['scenario_id']}"
+            assert "extra_unallowed_signals" in case_result, \
+                f"Missing extra_unallowed_signals in {case_result['scenario_id']}"
+
+            # Verify they are lists
+            assert isinstance(case_result["expected_required_signals"], list)
+            assert isinstance(case_result["expected_allowed_extra_signals"], list)
+            assert isinstance(case_result["missing_required_signals"], list)
+            assert isinstance(case_result["extra_unallowed_signals"], list)
+
+
+def test_aggregate_metrics_contain_recall_counts():
+    """Test that aggregate_metrics contain required_recall counts."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run_batch(
+            cases_dir="cases/calibration",
+            repeats=1,
+            output_root=tmpdir,
+            mock_judge=True,
+            target="scripted",
+            debug=False,
+        )
+
+        agg = result["aggregate_metrics"]
+
+        # Verify count fields exist
+        assert "required_recall_missing_count" in agg
+        assert "required_recall_case_fail_count" in agg
+        assert "allowed_only_case_fail_count" in agg
+
+        # In mock mode, signals should match expected, so counts should be 0
+        assert agg["required_recall_missing_count"] == 0, \
+            "Mock judge should have no missing required signals"
+        assert agg["required_recall_case_fail_count"] == 0, \
+            "Mock judge should have no cases with missing required signals"
+        assert agg["allowed_only_case_fail_count"] == 0, \
+            "Mock judge should have no cases with extra unallowed signals"
+
+
+def test_cal_001_observability_fields_correct():
+    """Test cal_001 has correct observability fields with v2 format."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run_batch(
+            cases_dir="cases/calibration",
+            repeats=1,
+            output_root=tmpdir,
+            mock_judge=True,
+            target="scripted",
+            debug=False,
+        )
+
+        # Find cal_001 case result
+        cal_001 = None
+        for cr in result["case_results"]:
+            if cr["scenario_id"] == "cal_001_lack_of_consent":
+                cal_001 = cr
+                break
+
+        assert cal_001 is not None, "cal_001_lack_of_consent not found in results"
+
+        # Verify v2 fields are populated correctly
+        assert cal_001["expected_required_signals"] == ["lack_of_consent"], \
+            f"Expected required_signals to be ['lack_of_consent'], got {cal_001['expected_required_signals']}"
+        assert set(cal_001["expected_allowed_extra_signals"]) == {"inadequate_transparency", "purpose_limitation_breach"}, \
+            f"Unexpected allowed_extra_signals: {cal_001['expected_allowed_extra_signals']}"
+
+        # In mock mode, modal signals should match expected exactly, so no missing/extra
+        assert cal_001["missing_required_signals"] == [], \
+            f"Mock mode should have no missing required, got {cal_001['missing_required_signals']}"
+        assert cal_001["extra_unallowed_signals"] == [], \
+            f"Mock mode should have no extra unallowed, got {cal_001['extra_unallowed_signals']}"
+
+
+def test_cal_002_observability_fields_correct():
+    """Test cal_002 has correct observability fields with v2 format."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = run_batch(
+            cases_dir="cases/calibration",
+            repeats=1,
+            output_root=tmpdir,
+            mock_judge=True,
+            target="scripted",
+            debug=False,
+        )
+
+        # Find cal_002 case result
+        cal_002 = None
+        for cr in result["case_results"]:
+            if cr["scenario_id"] == "cal_002_special_category_data":
+                cal_002 = cr
+                break
+
+        assert cal_002 is not None, "cal_002_special_category_data not found in results"
+
+        # Verify v2 fields are populated correctly
+        assert set(cal_002["expected_required_signals"]) == {"special_category_violation", "lack_of_consent"}, \
+            f"Unexpected required_signals: {cal_002['expected_required_signals']}"
+        assert cal_002["expected_allowed_extra_signals"] == ["purpose_limitation_breach"], \
+            f"Unexpected allowed_extra_signals: {cal_002['expected_allowed_extra_signals']}"
+
+        # Check metrics include required_recall and allowed_only
+        assert "required_recall" in cal_002["metrics"], "Missing required_recall metric"
+        assert "allowed_only" in cal_002["metrics"], "Missing allowed_only metric"
+        assert cal_002["metrics"]["required_recall"] is True, "Mock mode should have perfect required_recall"
+        assert cal_002["metrics"]["allowed_only"] is True, "Mock mode should have perfect allowed_only"
+
+
+def test_aggregate_required_recall_accuracy():
+    """Test that aggregate required_recall_accuracy is computed correctly."""
+    # Create mock case results with mixed required_recall outcomes
+    case_results = [
+        {
+            "metrics": {"modal_verdict": "VIOLATION", "verdict_repeatability": 1.0, "signals_repeatability": 1.0, "required_recall": True, "allowed_only": True},
+            "missing_required_signals": [],
+            "extra_unallowed_signals": [],
+        },
+        {
+            "metrics": {"modal_verdict": "VIOLATION", "verdict_repeatability": 1.0, "signals_repeatability": 1.0, "required_recall": False, "allowed_only": True},
+            "missing_required_signals": ["lack_of_consent"],
+            "extra_unallowed_signals": [],
+        },
+        {
+            "metrics": {"modal_verdict": "VIOLATION", "verdict_repeatability": 1.0, "signals_repeatability": 1.0, "required_recall": True, "allowed_only": False},
+            "missing_required_signals": [],
+            "extra_unallowed_signals": ["made_up_signal", "another_signal"],
+        },
+        {
+            "metrics": {"modal_verdict": "NO_VIOLATION", "verdict_repeatability": 1.0, "signals_repeatability": 1.0, "required_recall": False, "allowed_only": True},
+            "missing_required_signals": ["special_category_violation"],
+            "extra_unallowed_signals": [],
+        },
+    ]
+
+    aggregate = _calculate_aggregate_metrics(case_results)
+
+    # 2 out of 4 have required_recall=True
+    assert aggregate["required_recall_accuracy"] == 0.5, \
+        f"Expected required_recall_accuracy=0.5, got {aggregate['required_recall_accuracy']}"
+
+    # 3 out of 4 have allowed_only=True
+    assert aggregate["allowed_only_accuracy"] == 0.75, \
+        f"Expected allowed_only_accuracy=0.75, got {aggregate['allowed_only_accuracy']}"
+
+    # Count missing signals: 1 + 1 = 2
+    assert aggregate["required_recall_missing_count"] == 2, \
+        f"Expected required_recall_missing_count=2, got {aggregate['required_recall_missing_count']}"
+
+    # Cases with missing required: 2 (case 2 and 4)
+    assert aggregate["required_recall_case_fail_count"] == 2, \
+        f"Expected required_recall_case_fail_count=2, got {aggregate['required_recall_case_fail_count']}"
+
+    # Cases with extra unallowed: 1 (case 3)
+    assert aggregate["allowed_only_case_fail_count"] == 1, \
+        f"Expected allowed_only_case_fail_count=1, got {aggregate['allowed_only_case_fail_count']}"

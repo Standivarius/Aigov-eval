@@ -170,12 +170,32 @@ def _run_case_with_repeats(
     # Calculate metrics
     metrics = _calculate_case_metrics(run_results, scenario)
 
+    # Extract expected signals for observability
+    expected = scenario.get("expected_outcome", {})
+    # Support v2 format: required_signals + allowed_extra_signals
+    # Fallback to v1: signals as required, empty allowed_extra
+    expected_required = expected.get("required_signals", expected.get("signals", []))
+    expected_allowed_extra = expected.get("allowed_extra_signals", [])
+
+    # Compute missing/extra for debugging
+    modal_signals_set = set(metrics.get("modal_signals", []))
+    required_set = set(expected_required)
+    allowed_set = required_set | set(expected_allowed_extra)
+
+    missing_required = sorted(required_set - modal_signals_set)
+    extra_unallowed = sorted(modal_signals_set - allowed_set)
+
     return {
         "scenario_id": scenario_id,
         "case_file": str(case_file),
         "repeats": repeats,
         "runs": run_results,
         "metrics": metrics,
+        # Observability fields for debugging
+        "expected_required_signals": list(expected_required),
+        "expected_allowed_extra_signals": list(expected_allowed_extra),
+        "missing_required_signals": missing_required,
+        "extra_unallowed_signals": extra_unallowed,
     }
 
 
@@ -213,15 +233,33 @@ def _calculate_case_metrics(run_results: list[dict], scenario: dict) -> dict:
     expected = scenario.get("expected_outcome", {})
     if expected:
         expected_verdict = expected.get("verdict")
+        # Support v2 format: required_signals + allowed_extra_signals
+        # Fallback to v1: signals as required, empty allowed_extra
+        required_signals = set(expected.get("required_signals", expected.get("signals", [])))
+        allowed_extra_signals = set(expected.get("allowed_extra_signals", []))
+        all_allowed_signals = required_signals | allowed_extra_signals
+
+        # Legacy signals field for backwards compatibility
         expected_signals = set(expected.get("signals", []))
 
         if expected_verdict and modal_verdict:
             metrics["verdict_correctness"] = modal_verdict == expected_verdict
 
+        modal_signals_set = set(modal_signals)
+
+        # Legacy strict/subset metrics (based on signals field)
         if expected_signals:
-            modal_signals_set = set(modal_signals)
             metrics["signals_correctness_strict"] = modal_signals_set == expected_signals
             metrics["signals_correctness_subset"] = expected_signals.issubset(modal_signals_set)
+
+        # V2 metrics: required_recall and allowed_only
+        if required_signals:
+            # Required recall: did we capture all required signals?
+            metrics["required_recall"] = required_signals.issubset(modal_signals_set)
+
+        if all_allowed_signals:
+            # Allowed only: are all returned signals in the allowed set?
+            metrics["allowed_only"] = modal_signals_set.issubset(all_allowed_signals)
 
     return metrics
 
@@ -257,6 +295,32 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         if "signals_correctness_subset" in cr["metrics"]
     ]
 
+    # V2 metrics: required_recall and allowed_only
+    required_recall = [
+        cr["metrics"].get("required_recall")
+        for cr in case_results
+        if "required_recall" in cr["metrics"]
+    ]
+    allowed_only = [
+        cr["metrics"].get("allowed_only")
+        for cr in case_results
+        if "allowed_only" in cr["metrics"]
+    ]
+
+    # Debugging counts from observability fields
+    required_recall_missing_count = sum(
+        len(cr.get("missing_required_signals", []))
+        for cr in case_results
+    )
+    required_recall_case_fail_count = sum(
+        1 for cr in case_results
+        if cr.get("missing_required_signals")
+    )
+    allowed_only_case_fail_count = sum(
+        1 for cr in case_results
+        if cr.get("extra_unallowed_signals")
+    )
+
     # Count modal verdicts across all cases
     modal_verdicts = [
         cr["metrics"].get("modal_verdict")
@@ -272,6 +336,10 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         "verdict_pass_count": modal_verdict_counter.get("NO_VIOLATION", 0),
         "verdict_fail_count": modal_verdict_counter.get("VIOLATION", 0),
         "verdict_unclear_count": modal_verdict_counter.get("UNCLEAR", 0),
+        # Debugging counts for required/allowed analysis
+        "required_recall_missing_count": required_recall_missing_count,
+        "required_recall_case_fail_count": required_recall_case_fail_count,
+        "allowed_only_case_fail_count": allowed_only_case_fail_count,
     }
 
     if verdict_correctness:
@@ -282,6 +350,12 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
 
     if signals_subset:
         aggregate["signals_subset_accuracy"] = sum(signals_subset) / len(signals_subset)
+
+    if required_recall:
+        aggregate["required_recall_accuracy"] = sum(required_recall) / len(required_recall)
+
+    if allowed_only:
+        aggregate["allowed_only_accuracy"] = sum(allowed_only) / len(allowed_only)
 
     return aggregate
 
@@ -331,6 +405,21 @@ def _write_batch_report(path: Path, summary: dict) -> None:
     if "signals_subset_accuracy" in agg:
         lines.append(f"- **Signals Subset Accuracy**: {agg['signals_subset_accuracy']:.2%}")
 
+    if "required_recall_accuracy" in agg:
+        lines.append(f"- **Required Recall Accuracy**: {agg['required_recall_accuracy']:.2%}")
+
+    if "allowed_only_accuracy" in agg:
+        lines.append(f"- **Allowed Only Accuracy**: {agg['allowed_only_accuracy']:.2%}")
+
+    # Debugging counts
+    lines.extend([
+        "",
+        "### Signal Analysis Counts",
+        f"- **Required Recall Missing Count**: {agg.get('required_recall_missing_count', 0)} (total missing signals across all cases)",
+        f"- **Required Recall Case Fail Count**: {agg.get('required_recall_case_fail_count', 0)} (cases with missing required signals)",
+        f"- **Allowed Only Case Fail Count**: {agg.get('allowed_only_case_fail_count', 0)} (cases with extra unallowed signals)",
+    ])
+
     lines.extend([
         "",
         "---",
@@ -359,6 +448,22 @@ def _write_batch_report(path: Path, summary: dict) -> None:
 
         if "signals_correctness_subset" in m:
             lines.append(f"- **Signals Subset**: {'✓ PASS' if m['signals_correctness_subset'] else '✗ FAIL'}")
+
+        if "required_recall" in m:
+            lines.append(f"- **Required Recall**: {'✓ PASS' if m['required_recall'] else '✗ FAIL'}")
+
+        if "allowed_only" in m:
+            lines.append(f"- **Allowed Only**: {'✓ PASS' if m['allowed_only'] else '✗ FAIL'}")
+
+        # Observability: show expected and missing/extra signals
+        if case.get("expected_required_signals"):
+            lines.append(f"- **Expected Required**: {', '.join(case['expected_required_signals'])}")
+        if case.get("expected_allowed_extra_signals"):
+            lines.append(f"- **Allowed Extra**: {', '.join(case['expected_allowed_extra_signals'])}")
+        if case.get("missing_required_signals"):
+            lines.append(f"- **Missing Required**: {', '.join(case['missing_required_signals'])}")
+        if case.get("extra_unallowed_signals"):
+            lines.append(f"- **Extra Unallowed**: {', '.join(case['extra_unallowed_signals'])}")
 
         lines.append("")
 
