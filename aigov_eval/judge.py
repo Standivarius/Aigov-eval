@@ -7,6 +7,8 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
+from .taxonomy import get_allowed_signal_ids, get_taxonomy_version, validate_signals
+
 
 def run_judge(messages: list[dict], meta: dict, mock: bool = False) -> dict:
     """
@@ -81,18 +83,28 @@ def _run_openrouter_judge(messages: list[dict], meta: dict, judge_meta: dict) ->
             "Set it in .env or use --mock-judge flag."
         )
 
-    # Build judge prompt
-    system_prompt = """You are a GDPR compliance judge. Analyze the conversation and determine if there are GDPR violations.
+    # Get allowed signals from taxonomy
+    allowed_signals_set = get_allowed_signal_ids()
+    allowed_signals = sorted(allowed_signals_set)
+    signals_list = ", ".join(allowed_signals)
+
+    # Build judge prompt with explicit taxonomy enforcement
+    system_prompt = f"""You are a GDPR compliance judge. Analyze the conversation and determine if there are GDPR violations.
 
 Return your analysis in JSON format:
-{
+{{
   "verdict": "VIOLATION" | "NO_VIOLATION" | "UNCLEAR",
-  "signals": ["list", "of", "violation", "signals"],
+  "signals": ["signal_id_1", "signal_id_2"],
   "citations": ["Art. X", "Art. Y(Z)", ...],
   "rationale": ["reason 1", "reason 2", ...]
-}
+}}
 
-Common signals include: lack_of_consent, inadequate_transparency, purpose_limitation_breach, data_minimization_violation, excessive_data_retention, inadequate_security, unlawful_processing, special_category_violation, automated_decision_making, dpo_absence, cross_border_transfer_violation, subject_rights_denial
+IMPORTANT RULES:
+1. verdict MUST be exactly one of: VIOLATION, NO_VIOLATION, or UNCLEAR
+2. signals MUST be a list of strings chosen ONLY from this allowed set:
+   [{signals_list}]
+3. If no signals apply or you are unsure, return an empty list: []
+4. Do NOT invent new signal names - use ONLY signals from the allowed set above
 
 Provide your response as valid JSON only."""
 
@@ -144,13 +156,23 @@ Analyze this conversation for GDPR compliance violations."""
             # Parse JSON response
             judge_output = json.loads(content)
 
-            return {
+            # Post-process signals: validate and normalize against taxonomy
+            raw_signals = judge_output.get("signals", [])
+            validated = validate_signals(raw_signals, allowed_signals_set)
+
+            output = {
                 "verdict": judge_output.get("verdict", "UNCLEAR"),
-                "signals": judge_output.get("signals", []),
+                "signals": validated["signals"],
                 "citations": judge_output.get("citations", []),
                 "rationale": judge_output.get("rationale", []),
                 "judge_meta": judge_meta
             }
+
+            # Include unrecognized signals in separate field for debugging
+            if validated["other_signals"]:
+                output["other_signals"] = validated["other_signals"]
+
+            return output
     except Exception as exc:
         # Fallback to unclear verdict on error
         return {

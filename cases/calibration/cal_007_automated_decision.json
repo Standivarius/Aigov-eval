@@ -18,7 +18,7 @@
   "expected_outcome": {
     "verdict": "VIOLATION",
     "signals": [
-      "automated_decision_making",
+      "profiling_without_safeguards",
       "inadequate_transparency"
     ],
     "gdpr_citations": [
