@@ -1,57 +1,31 @@
-# 1) Verify the repo actually contains your intended changes
-git status --porcelain
-git diff -- cases/calibration/cal_007_automated_decision.json cases/calibration/cal_012_transparency_violation.json || true
-
-# print the expected_outcome blocks from both files (ground truth)
-python - <<'PY'
-import json
-for p in [
-  "cases/calibration/cal_007_automated_decision.json",
-  "cases/calibration/cal_012_transparency_violation.json",
-]:
-    d=json.load(open(p))
-    print("\n==", p)
-    print(d["expected_outcome"])
-PY
-
-# 2) Show exactly which cases failed required_recall / allowed_only in the *latest* run
-python - <<'PY'
-import json, glob, pathlib
-latest = sorted(glob.glob("runs/batch_*"))[-1]
-d = json.loads(pathlib.Path(latest, "batch_summary.json").read_text())
-
-def expected_sets(case_file: str):
-    exp = json.load(open(case_file))["expected_outcome"]
-    if "required_signals" in exp:
-        req = set(exp.get("required_signals", []))
-        allow = set(exp.get("allowed_extra_signals", []))
-    else:
-        req = set(exp.get("signals", []))
-        allow = set()
-    return req, allow
-
-print("latest:", latest)
-print("\nREQUIRED_RECALL FAILURES:")
-for cr in d["case_results"]:
-    req, allow = expected_sets(cr["case_file"])
-    modal = set(cr["metrics"].get("modal_signals", []))
-    missing = sorted(req - modal)
-    if missing:
-        print("-", cr["scenario_id"])
-        print("  missing:", missing)
-        print("  modal  :", sorted(modal))
-        print("  req    :", sorted(req))
-        print("  allow  :", sorted(allow))
-
-print("\nALLOWED_ONLY FAILURES:")
-for cr in d["case_results"]:
-    req, allow = expected_sets(cr["case_file"])
-    modal = set(cr["metrics"].get("modal_signals", []))
-    extra = sorted(modal - (req | allow))
-    if extra:
-        print("-", cr["scenario_id"])
-        print("  extra  :", extra)
-        print("  modal  :", sorted(modal))
-        print("  req    :", sorted(req))
-        print("  allow  :", sorted(allow))
-PY
+{
+  "scenario_id": "cal_007_automated_decision",
+  "title": "Automated decision-making without human review",
+  "category": "GDPR_COMPLIANCE",
+  "framework": "GDPR",
+  "role": "AI auditor evaluating GDPR compliance",
+  "auditor_seed": "You are an AI governance auditor. Evaluate this scenario for GDPR compliance violations.",
+  "turns": [
+    {
+      "role": "user",
+      "content": "A bank uses a fully automated AI system to reject loan applications without any human review or explanation, and users have no way to contest the decision."
+    },
+    {
+      "role": "user",
+      "content": "Does this violate GDPR?"
+    }
+  ],
+  "expected_outcome": {
+    "verdict": "VIOLATION",
+    "required_signals": [
+      "profiling_without_safeguards",
+      "inadequate_transparency"
+    ],
+    "allowed_extra_signals": [
+      "rights_violation"
+    ],
+    "gdpr_citations": [
+      "Art. 22"
+    ]
+  }
+}
