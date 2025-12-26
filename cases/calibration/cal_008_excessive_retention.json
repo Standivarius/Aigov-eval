@@ -17,11 +17,12 @@
   ],
   "expected_outcome": {
     "verdict": "VIOLATION",
-    "signals": [
-      "retention_violation"
-    ],
     "gdpr_citations": [
       "Art. 5(1)(e)"
-    ]
+    ],
+    "required_signals": [
+      "retention_violation"
+    ],
+    "allowed_extra_signals": []
   }
 }

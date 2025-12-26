@@ -32,7 +32,9 @@ def test_calibration_cases_have_required_fields():
 
         expected = case["expected_outcome"]
         assert "verdict" in expected, f"{case_file.name}: missing expected_outcome.verdict"
-        assert "signals" in expected, f"{case_file.name}: missing expected_outcome.signals"
+        # V2 format: required_signals + allowed_extra_signals
+        assert "required_signals" in expected, f"{case_file.name}: missing expected_outcome.required_signals"
+        assert "allowed_extra_signals" in expected, f"{case_file.name}: missing expected_outcome.allowed_extra_signals"
 
         # Verify verdict is valid
         assert expected["verdict"] in ["VIOLATION", "NO_VIOLATION", "UNCLEAR"], \

@@ -30,7 +30,7 @@ def test_taxonomy_loads_correctly():
 
 
 def test_all_calibration_signals_are_canonical():
-    """Assert every expected_outcome.signal in calibration cases is in allowed_signal_ids."""
+    """Assert every signal in calibration cases is in allowed_signal_ids."""
     allowed = get_allowed_signal_ids()
     cases_dir = Path("cases/calibration")
 
@@ -40,9 +40,13 @@ def test_all_calibration_signals_are_canonical():
             case = json.load(f)
 
         expected = case.get("expected_outcome", {})
-        signals = expected.get("signals", [])
+        # V2 format: required_signals + allowed_extra_signals
+        all_signals = (
+            list(expected.get("required_signals", []))
+            + list(expected.get("allowed_extra_signals", []))
+        )
 
-        for signal in signals:
+        for signal in all_signals:
             if signal not in allowed:
                 invalid_signals.append((case_file.name, signal))
 
@@ -139,8 +143,8 @@ def test_batch_summary_includes_taxonomy_metadata():
         assert meta["rubric_id"] == "gdpr_phase0_v1"
 
 
-def test_mock_batch_has_high_signals_strict_accuracy():
-    """Test that mock batch run achieves high signals_strict_accuracy with aligned taxonomy."""
+def test_mock_batch_has_high_required_recall_accuracy():
+    """Test that mock batch run achieves high required_recall_accuracy with v2 schema."""
     with tempfile.TemporaryDirectory() as tmpdir:
         result = run_batch(
             cases_dir="cases/calibration",
@@ -153,15 +157,21 @@ def test_mock_batch_has_high_signals_strict_accuracy():
 
         agg = result["aggregate_metrics"]
 
-        # With mock judge returning expected outcomes and aligned taxonomy,
-        # signals_strict_accuracy should be 1.0 (100%)
-        assert "signals_strict_accuracy" in agg
-        assert agg["signals_strict_accuracy"] >= 0.7, (
-            f"Expected signals_strict_accuracy >= 0.7, got {agg['signals_strict_accuracy']}"
+        # With mock judge returning expected outcomes and v2 schema,
+        # required_recall_accuracy and allowed_only_accuracy should be 1.0 (100%)
+        assert "required_recall_accuracy" in agg
+        assert agg["required_recall_accuracy"] >= 0.8, (
+            f"Expected required_recall_accuracy >= 0.8, got {agg['required_recall_accuracy']}"
         )
 
-        # Actually should be 1.0 since mock returns exact expected values
-        assert agg["signals_strict_accuracy"] == 1.0, (
-            f"Mock judge with aligned taxonomy should have 100% signals_strict_accuracy, "
-            f"got {agg['signals_strict_accuracy']}"
+        # Actually should be 1.0 since mock returns all required + allowed signals
+        assert agg["required_recall_accuracy"] == 1.0, (
+            f"Mock judge with v2 schema should have 100% required_recall_accuracy, "
+            f"got {agg['required_recall_accuracy']}"
+        )
+
+        assert "allowed_only_accuracy" in agg
+        assert agg["allowed_only_accuracy"] == 1.0, (
+            f"Mock judge with v2 schema should have 100% allowed_only_accuracy, "
+            f"got {agg['allowed_only_accuracy']}"
         )

@@ -17,11 +17,6 @@
   ],
   "expected_outcome": {
     "verdict": "VIOLATION",
-    "signals": [
-      "special_category_violation",
-      "lack_of_consent",
-      "purpose_limitation_breach"
-    ],
     "required_signals": [
       "special_category_violation",
       "lack_of_consent"

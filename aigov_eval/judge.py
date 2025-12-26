@@ -59,7 +59,14 @@ def _run_mock_judge(messages: list[dict], meta: dict, judge_meta: dict) -> dict:
 
     # Use expected outcome as mock response (deterministic)
     verdict = expected.get("verdict", "NO_VIOLATION")
-    signals = expected.get("signals", [])
+    # Support v2 format: required_signals + allowed_extra_signals
+    # Fallback to legacy signals field for backwards compatibility
+    if "required_signals" in expected:
+        # V2 format: return all expected signals (required + allowed_extra)
+        signals = list(expected.get("required_signals", [])) + list(expected.get("allowed_extra_signals", []))
+    else:
+        # Legacy format
+        signals = expected.get("signals", [])
     citations = expected.get("gdpr_citations", [])
     rationale = expected.get("rationale", ["Mock judge deterministic output"])
 

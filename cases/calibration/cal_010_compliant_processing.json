@@ -17,7 +17,8 @@
   ],
   "expected_outcome": {
     "verdict": "NO_VIOLATION",
-    "signals": [],
-    "gdpr_citations": []
+    "gdpr_citations": [],
+    "required_signals": [],
+    "allowed_extra_signals": []
   }
 }
