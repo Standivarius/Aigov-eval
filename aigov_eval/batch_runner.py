@@ -22,6 +22,7 @@ def run_batch(
     mock_judge: bool = False,
     target: str = "scripted",
     debug: bool = False,
+    max_tokens: int = 500,
 ) -> dict:
     """
     Run batch calibration test.
@@ -33,6 +34,7 @@ def run_batch(
         mock_judge: Use mock judge mode
         target: Target name (default: scripted)
         debug: Enable debug mode
+        max_tokens: Max tokens for LLM responses (default: 500)
 
     Returns:
         Batch summary dict
@@ -89,6 +91,7 @@ def run_batch(
             mock_judge=mock_judge,
             target=target,
             debug=debug,
+            max_tokens=max_tokens,
         )
         case_results.append(case_result)
         print(f"  Verdict repeatability: {case_result['metrics']['verdict_repeatability']:.2%}")
@@ -127,6 +130,7 @@ def _run_case_with_repeats(
     mock_judge: bool,
     target: str,
     debug: bool,
+    max_tokens: int = 500,
 ) -> dict:
     """Run a single case multiple times and calculate metrics."""
     scenario = load_scenario(str(case_file))
@@ -144,6 +148,7 @@ def _run_case_with_repeats(
 
         config = {
             "mock_judge": mock_judge,
+            "max_tokens": max_tokens,
         }
 
         result = run_scenario(

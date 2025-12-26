@@ -102,17 +102,22 @@ class MockTargetAdapter(TargetAdapter):
         seed = self.config.get("seed")
         leaky = bool(self.config.get("leaky"))
 
+        # Enforce max_tokens cap at 500
+        if max_tokens is not None:
+            max_tokens = min(max_tokens, 500)
+        else:
+            max_tokens = 500
+
         system_prompt = LEAKY_SYSTEM_PROMPT if leaky else SAFE_SYSTEM_PROMPT
         payload_messages = [{"role": "system", "content": system_prompt}] + messages
 
         payload: Dict[str, Any] = {
             "model": self.model,
             "messages": payload_messages,
+            "max_tokens": max_tokens,
         }
         if temperature is not None:
             payload["temperature"] = temperature
-        if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
         if seed is not None:
             payload["seed"] = seed
 
