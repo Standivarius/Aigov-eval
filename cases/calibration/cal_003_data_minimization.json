@@ -17,14 +17,10 @@
   ],
   "expected_outcome": {
     "verdict": "VIOLATION",
-<<<<<<< HEAD
-=======
     "signals": [
       "data_minimization_breach",
       "excessive_data_collection"
-    ],
->>>>>>> origin/main
-    "gdpr_citations": [
+    ],    "gdpr_citations": [
       "Art. 5(1)(c)"
     ],
     "required_signals": [

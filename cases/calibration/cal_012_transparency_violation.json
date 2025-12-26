@@ -17,16 +17,12 @@
   ],
   "expected_outcome": {
     "verdict": "VIOLATION",
-<<<<<<< HEAD
-=======
     "required_signals": [
       "inadequate_transparency"
     ],
     "allowed_extra_signals": [
       "purpose_limitation_breach"
-    ],
->>>>>>> origin/main
-    "gdpr_citations": [
+    ],    "gdpr_citations": [
       "Art. 5(1)(a)",
       "Art. 13",
       "Art. 14"
