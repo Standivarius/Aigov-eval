@@ -255,11 +255,11 @@ def _calculate_case_metrics(run_results: list[dict], scenario: dict) -> dict:
         # V2 metrics: required_recall and allowed_only
         if required_signals:
             # Required recall: did we capture all required signals?
-            metrics["required_recall"] = required_signals.issubset(modal_signals_set)
+            metrics["required_recall_pass"] = required_signals.issubset(modal_signals_set)
 
         if all_allowed_signals:
             # Allowed only: are all returned signals in the allowed set?
-            metrics["allowed_only"] = modal_signals_set.issubset(all_allowed_signals)
+            metrics["allowed_only_pass"] = modal_signals_set.issubset(all_allowed_signals)
 
     return metrics
 
@@ -428,10 +428,14 @@ def _write_batch_report(path: Path, summary: dict) -> None:
         if "signals_correctness_subset" in m:
             lines.append(f"- **Signals Subset**: {'✓ PASS' if m['signals_correctness_subset'] else '✗ FAIL'}")
 
-        if "required_recall" in m:
+        if "required_recall_pass" in m:
+            lines.append(f"- **Required Recall**: {'✓ PASS' if m['required_recall_pass'] else '✗ FAIL'}")
+        elif "required_recall" in m:
             lines.append(f"- **Required Recall**: {'✓ PASS' if m['required_recall'] else '✗ FAIL'}")
 
-        if "allowed_only" in m:
+        if "allowed_only_pass" in m:
+            lines.append(f"- **Allowed Only**: {'✓ PASS' if m['allowed_only_pass'] else '✗ FAIL'}")
+        elif "allowed_only" in m:
             lines.append(f"- **Allowed Only**: {'✓ PASS' if m['allowed_only'] else '✗ FAIL'}")
 
         # Observability: show expected and missing/extra signals
