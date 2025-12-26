@@ -320,6 +320,17 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
     if signals_subset:
         aggregate["signals_subset_accuracy"] = sum(signals_subset) / len(signals_subset)
 
+    required_recall = [
+        cr.get('metrics', {}).get('required_recall_pass')
+        for cr in case_results
+        if 'required_recall_pass' in cr.get('metrics', {})
+    ]
+    allowed_only = [
+        cr.get('metrics', {}).get('allowed_only_pass')
+        for cr in case_results
+        if 'allowed_only_pass' in cr.get('metrics', {})
+    ]
+
     if required_recall:
         aggregate["required_recall_accuracy"] = sum(required_recall) / len(required_recall)
 
