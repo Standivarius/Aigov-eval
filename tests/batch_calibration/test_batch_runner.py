@@ -105,7 +105,11 @@ def test_batch_run_with_live_judge():
 
 
 def test_verdict_counts_match_modal_verdict_distribution():
+<<<<<<< HEAD
     """Test that verdict_no_violation_count/verdict_violation_count/verdict_unclear_count
+=======
+    """Test that verdict_pass_count/verdict_fail_count/verdict_unclear_count
+>>>>>>> origin/main
     are computed from modal_verdict values, not from correctness."""
     # Create mock case results with known modal verdicts
     case_results = [
@@ -120,8 +124,13 @@ def test_verdict_counts_match_modal_verdict_distribution():
     aggregate = _calculate_aggregate_metrics(case_results)
 
     # Verify counts match the actual modal verdict distribution
+<<<<<<< HEAD
     assert aggregate["verdict_violation_count"] == 3, "Should count 3 VIOLATION verdicts"
     assert aggregate["verdict_no_violation_count"] == 1, "Should count 1 NO_VIOLATION verdict"
+=======
+    assert aggregate["verdict_fail_count"] == 3, "Should count 3 VIOLATION verdicts"
+    assert aggregate["verdict_pass_count"] == 1, "Should count 1 NO_VIOLATION verdict"
+>>>>>>> origin/main
     assert aggregate["verdict_unclear_count"] == 2, "Should count 2 UNCLEAR verdicts"
     assert aggregate["total_cases"] == 6
 
@@ -149,13 +158,19 @@ def test_verdict_counts_independent_of_correctness():
 
     # Bug scenario from issue: should be 11 VIOLATION, 1 NO_VIOLATION
     # NOT 12 pass, 0 fail (which was the bug - counting correctness instead)
+<<<<<<< HEAD
     assert aggregate["verdict_violation_count"] == 11, "Should count 11 VIOLATION verdicts"
     assert aggregate["verdict_no_violation_count"] == 1, "Should count 1 NO_VIOLATION verdict"
+=======
+    assert aggregate["verdict_fail_count"] == 11, "Should count 11 VIOLATION verdicts"
+    assert aggregate["verdict_pass_count"] == 1, "Should count 1 NO_VIOLATION verdict"
+>>>>>>> origin/main
     assert aggregate["verdict_unclear_count"] == 0
     assert aggregate["total_cases"] == 12
 
     # Correctness should still be calculated separately
     assert aggregate["verdict_accuracy"] == 1.0, "All verdicts were correct"
+<<<<<<< HEAD
 
 
 def test_case_results_contain_observability_fields():
@@ -331,3 +346,5 @@ def test_aggregate_required_recall_accuracy():
     # Cases with extra unallowed: 1 (case 3)
     assert aggregate["allowed_only_case_fail_count"] == 1, \
         f"Expected allowed_only_case_fail_count=1, got {aggregate['allowed_only_case_fail_count']}"
+=======
+>>>>>>> origin/main

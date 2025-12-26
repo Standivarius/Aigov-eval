@@ -17,6 +17,12 @@
   ],
   "expected_outcome": {
     "verdict": "VIOLATION",
+<<<<<<< HEAD
+=======
+    "signals": [
+      "international_transfer_violation"
+    ],
+>>>>>>> origin/main
     "gdpr_citations": [
       "Art. 44",
       "Art. 45",

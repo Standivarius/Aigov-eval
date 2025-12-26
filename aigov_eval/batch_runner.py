@@ -295,6 +295,7 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         if "signals_correctness_subset" in cr["metrics"]
     ]
 
+<<<<<<< HEAD
     # V2 metrics: required_recall and allowed_only
     required_recall = [
         cr["metrics"].get("required_recall")
@@ -321,6 +322,8 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         if cr.get("extra_unallowed_signals")
     )
 
+=======
+>>>>>>> origin/main
     # Count modal verdicts across all cases
     modal_verdicts = [
         cr["metrics"].get("modal_verdict")
@@ -333,6 +336,7 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         "mean_verdict_repeatability": sum(verdict_repeatability) / total_cases if verdict_repeatability else 0.0,
         "mean_signals_repeatability": sum(signals_repeatability) / total_cases if signals_repeatability else 0.0,
         # Verdict distribution based on modal_verdict values
+<<<<<<< HEAD
         "verdict_no_violation_count": modal_verdict_counter.get("NO_VIOLATION", 0),
         "verdict_violation_count": modal_verdict_counter.get("VIOLATION", 0),
         "verdict_unclear_count": modal_verdict_counter.get("UNCLEAR", 0),
@@ -340,6 +344,11 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         "required_recall_missing_count": required_recall_missing_count,
         "required_recall_case_fail_count": required_recall_case_fail_count,
         "allowed_only_case_fail_count": allowed_only_case_fail_count,
+=======
+        "verdict_pass_count": modal_verdict_counter.get("NO_VIOLATION", 0),
+        "verdict_fail_count": modal_verdict_counter.get("VIOLATION", 0),
+        "verdict_unclear_count": modal_verdict_counter.get("UNCLEAR", 0),
+>>>>>>> origin/main
     }
 
     if verdict_correctness:
@@ -391,9 +400,15 @@ def _write_batch_report(path: Path, summary: dict) -> None:
 
     # Verdict distribution from modal verdicts
     lines.extend([
+<<<<<<< HEAD
         f"- **Verdict NO_VIOLATION Count**: {agg['verdict_no_violation_count']}",
         f"- **Verdict VIOLATION Count**: {agg['verdict_violation_count']}",
         f"- **Verdict UNCLEAR Count**: {agg['verdict_unclear_count']}",
+=======
+        f"- **Verdict Pass Count (NO_VIOLATION)**: {agg['verdict_pass_count']}",
+        f"- **Verdict Fail Count (VIOLATION)**: {agg['verdict_fail_count']}",
+        f"- **Verdict Unclear Count**: {agg['verdict_unclear_count']}",
+>>>>>>> origin/main
     ])
 
     if "verdict_accuracy" in agg:
