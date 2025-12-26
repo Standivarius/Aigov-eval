@@ -151,26 +151,53 @@ def _run_case_with_repeats(
             "max_tokens": max_tokens,
         }
 
-        result = run_scenario(
-            scenario_path=str(case_file),
-            target_name=target,
-            output_root=str(run_output.parent),
-            config=config,
-        )
+        try:
+            result = run_scenario(
+                scenario_path=str(case_file),
+                target_name=target,
+                output_root=str(run_output.parent),
+                config=config,
+            )
 
-        # Extract GDPR compliance score if available
-        gdpr_score = None
-        for score in result.scores:
-            if score.get("scorer") == "gdpr_compliance":
-                gdpr_score = score
-                break
+            # Extract GDPR compliance score if available
+            gdpr_score = None
+            for score in result.scores:
+                if score.get("scorer") == "gdpr_compliance":
+                    gdpr_score = score
+                    break
 
-        run_results.append({
-            "run_id": result.run_id,
-            "run_dir": str(result.run_dir),
-            "verdict": gdpr_score.get("verdict") if gdpr_score else None,
-            "signals": gdpr_score.get("signals", []) if gdpr_score else [],
-        })
+            run_results.append({
+                "run_id": result.run_id,
+                "run_dir": str(result.run_dir),
+                "verdict": gdpr_score.get("verdict") if gdpr_score else None,
+                "signals": gdpr_score.get("signals", []) if gdpr_score else [],
+            })
+
+        except Exception as exc:
+            # Record failure as UNCLEAR with error details
+            error_type = type(exc).__name__
+            error_msg = str(exc)
+
+            # Classify common error types
+            if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                error_type = "timeout"
+            elif "429" in error_msg or "rate limit" in error_msg.lower():
+                error_type = "rate_limit"
+            elif any(code in error_msg for code in ["500", "502", "503", "504"]):
+                error_type = "server_error"
+
+            print(f"  [WARNING] Run {i+1}/{repeats} failed: {error_type} - {error_msg[:100]}")
+
+            run_results.append({
+                "run_id": f"failed_{i+1:03d}",
+                "run_dir": str(run_output),
+                "verdict": "UNCLEAR",
+                "signals": [],
+                "error": {
+                    "error_type": error_type,
+                    "error_msg": error_msg,
+                },
+            })
 
     # Calculate metrics
     metrics = _calculate_case_metrics(run_results, scenario)
@@ -206,6 +233,9 @@ def _run_case_with_repeats(
 
 def _calculate_case_metrics(run_results: list[dict], scenario: dict) -> dict:
     """Calculate repeatability and correctness metrics for a case."""
+    # Count errors
+    error_count = sum(1 for r in run_results if "error" in r)
+
     # Extract verdicts and signals
     verdicts = [r["verdict"] for r in run_results if r["verdict"]]
     signals_sets = [tuple(sorted(r["signals"])) for r in run_results]
@@ -232,6 +262,7 @@ def _calculate_case_metrics(run_results: list[dict], scenario: dict) -> dict:
         "modal_signals": modal_signals,
         "verdict_repeatability": verdict_repeatability,
         "signals_repeatability": signals_repeatability,
+        "error_count": error_count,
     }
 
     # Correctness (if expected_outcome exists)

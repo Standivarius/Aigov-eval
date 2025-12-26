@@ -110,6 +110,7 @@ def run_scenario(
     scores = _run_scorers(scenario, transcript, mock_audit, mock_judge)
 
     finished_at = _utc_now()
+    duration_ms = _calculate_duration_ms(started_at, finished_at)
     run_meta = {
         "run_id": run_id,
         "scenario_path": scenario_path,
@@ -118,6 +119,7 @@ def run_scenario(
         "runner_config": runner_config,
         "started_at": started_at,
         "finished_at": finished_at,
+        "duration_ms": duration_ms,
     }
 
     _write_json(run_dir / "transcript.json", transcript)
@@ -216,6 +218,17 @@ def _write_json(path: Path, payload: Any) -> None:
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _calculate_duration_ms(started_at: str, finished_at: str) -> int:
+    """Calculate duration in milliseconds between two ISO timestamps."""
+    try:
+        start = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+        end = datetime.fromisoformat(finished_at.replace('Z', '+00:00'))
+        delta = end - start
+        return int(delta.total_seconds() * 1000)
+    except Exception:
+        return 0
 
 
 def _build_run_id() -> str:

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import socket
+import time
 import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
@@ -14,6 +16,12 @@ from .base import TargetAdapter
 
 DEFAULT_MODEL = "google/gemini-3-flash-preview"
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
+
+# Timeout and retry configuration
+CONNECT_TIMEOUT = 10  # seconds
+READ_TIMEOUT = 120    # seconds
+MAX_RETRIES = 3
+RETRY_BACKOFF = [1, 2, 4]  # seconds for each retry
 
 SAFE_SYSTEM_PROMPT = (
     "You are a customer service agent. Respond helpfully, but do not disclose "
@@ -133,29 +141,70 @@ class MockTargetAdapter(TargetAdapter):
             headers["X-Title"] = x_title
 
         url = f"{self.base_url}/chat/completions"
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
 
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                raw = resp.read().decode("utf-8")
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8")
-            raise RuntimeError(f"LLM request failed: {exc.code} {body}") from exc
+        # Retry with exponential backoff
+        last_error = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+                with urllib.request.urlopen(req, timeout=READ_TIMEOUT) as resp:
+                    raw = resp.read().decode("utf-8")
 
-        data = json.loads(raw)
-        content = data["choices"][0]["message"]["content"]
-        content, leak_log, leak_raw = _split_leak_log(content)
+                data = json.loads(raw)
+                content = data["choices"][0]["message"]["content"]
+                content, leak_log, leak_raw = _split_leak_log(content)
 
-        return {
-            "content": content,
-            "metadata": {
-                "model": self.model,
-                "base_url": self.base_url,
-                "usage": data.get("usage"),
-                "leak_log": leak_log,
-                "leak_log_raw": leak_raw,
-            },
-        }
+                return {
+                    "content": content,
+                    "metadata": {
+                        "model": self.model,
+                        "base_url": self.base_url,
+                        "usage": data.get("usage"),
+                        "leak_log": leak_log,
+                        "leak_log_raw": leak_raw,
+                    },
+                }
+
+            except urllib.error.HTTPError as exc:
+                status_code = exc.code
+                body = exc.read().decode("utf-8") if exc.fp else ""
+
+                # Retry on 429 (rate limit) or 5xx (server errors)
+                if status_code == 429 or (500 <= status_code < 600):
+                    last_error = RuntimeError(f"LLM request failed: {status_code} {body}")
+                    if attempt < MAX_RETRIES - 1:
+                        backoff = RETRY_BACKOFF[attempt] if attempt < len(RETRY_BACKOFF) else RETRY_BACKOFF[-1]
+                        print(f"[OpenRouter retry {attempt + 1}/{MAX_RETRIES}] HTTP {status_code}, retrying in {backoff}s...")
+                        time.sleep(backoff)
+                        continue
+                else:
+                    # Non-retryable error
+                    raise RuntimeError(f"LLM request failed: {status_code} {body}") from exc
+
+            except socket.timeout as exc:
+                last_error = RuntimeError(f"LLM request timed out after {READ_TIMEOUT}s")
+                if attempt < MAX_RETRIES - 1:
+                    backoff = RETRY_BACKOFF[attempt] if attempt < len(RETRY_BACKOFF) else RETRY_BACKOFF[-1]
+                    print(f"[OpenRouter retry {attempt + 1}/{MAX_RETRIES}] Timeout, retrying in {backoff}s...")
+                    time.sleep(backoff)
+                    continue
+
+            except Exception as exc:
+                # Other network errors (connection issues, etc.)
+                if "timed out" in str(exc).lower() or "timeout" in str(exc).lower():
+                    last_error = RuntimeError(f"LLM request timed out: {exc}")
+                    if attempt < MAX_RETRIES - 1:
+                        backoff = RETRY_BACKOFF[attempt] if attempt < len(RETRY_BACKOFF) else RETRY_BACKOFF[-1]
+                        print(f"[OpenRouter retry {attempt + 1}/{MAX_RETRIES}] Timeout error, retrying in {backoff}s...")
+                        time.sleep(backoff)
+                        continue
+                # Non-retryable error
+                raise RuntimeError(f"LLM request failed: {exc}") from exc
+
+        # All retries exhausted
+        if last_error:
+            raise last_error
+        raise RuntimeError("LLM request failed after all retries")
 
 
 def _last_user_message(messages: List[Dict[str, str]]) -> str:
