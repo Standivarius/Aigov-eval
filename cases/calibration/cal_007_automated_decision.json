@@ -17,12 +17,15 @@
   ],
   "expected_outcome": {
     "verdict": "VIOLATION",
-    "signals": [
-      "profiling_without_safeguards",
-      "inadequate_transparency"
-    ],
     "gdpr_citations": [
       "Art. 22"
+    ],
+    "required_signals": [
+      "inadequate_transparency",
+      "profiling_without_safeguards"
+    ],
+    "allowed_extra_signals": [
+      "rights_violation"
     ]
   }
 }

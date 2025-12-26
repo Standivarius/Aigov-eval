@@ -17,11 +17,12 @@
   ],
   "expected_outcome": {
     "verdict": "VIOLATION",
-    "signals": [
-      "inadequate_security"
-    ],
     "gdpr_citations": [
       "Art. 32"
-    ]
+    ],
+    "required_signals": [
+      "inadequate_security"
+    ],
+    "allowed_extra_signals": []
   }
 }

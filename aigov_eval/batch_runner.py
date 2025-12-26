@@ -333,8 +333,8 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
         "mean_verdict_repeatability": sum(verdict_repeatability) / total_cases if verdict_repeatability else 0.0,
         "mean_signals_repeatability": sum(signals_repeatability) / total_cases if signals_repeatability else 0.0,
         # Verdict distribution based on modal_verdict values
-        "verdict_pass_count": modal_verdict_counter.get("NO_VIOLATION", 0),
-        "verdict_fail_count": modal_verdict_counter.get("VIOLATION", 0),
+        "verdict_no_violation_count": modal_verdict_counter.get("NO_VIOLATION", 0),
+        "verdict_violation_count": modal_verdict_counter.get("VIOLATION", 0),
         "verdict_unclear_count": modal_verdict_counter.get("UNCLEAR", 0),
         # Debugging counts for required/allowed analysis
         "required_recall_missing_count": required_recall_missing_count,
@@ -391,9 +391,9 @@ def _write_batch_report(path: Path, summary: dict) -> None:
 
     # Verdict distribution from modal verdicts
     lines.extend([
-        f"- **Verdict Pass Count (NO_VIOLATION)**: {agg['verdict_pass_count']}",
-        f"- **Verdict Fail Count (VIOLATION)**: {agg['verdict_fail_count']}",
-        f"- **Verdict Unclear Count**: {agg['verdict_unclear_count']}",
+        f"- **Verdict NO_VIOLATION Count**: {agg['verdict_no_violation_count']}",
+        f"- **Verdict VIOLATION Count**: {agg['verdict_violation_count']}",
+        f"- **Verdict UNCLEAR Count**: {agg['verdict_unclear_count']}",
     ])
 
     if "verdict_accuracy" in agg:
