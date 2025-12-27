@@ -5,9 +5,31 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from .taxonomy import get_allowed_signal_ids, get_taxonomy_version, validate_signals
+
+# Max tokens cap (must match mock_llm.py)
+MAX_TOKENS_CAP = 500
+
+
+def _trace_request(tag: str, model: str, max_tokens: int, prompt_chars: int) -> None:
+    """Log OpenRouter request if tracing enabled."""
+    if os.getenv("AIGOV_TRACE_OPENROUTER") == "1":
+        print(f"[TRACE-REQ] {tag} | model={model} | max_tokens={max_tokens} | prompt_chars={prompt_chars}")
+
+
+def _trace_response(tag: str, usage: Optional[dict], provider: Optional[str] = None) -> None:
+    """Log OpenRouter response if tracing enabled."""
+    if os.getenv("AIGOV_TRACE_OPENROUTER") == "1":
+        if usage:
+            prompt_tok = usage.get("prompt_tokens", "?")
+            completion_tok = usage.get("completion_tokens", "?")
+            total_tok = usage.get("total_tokens", "?")
+            provider_info = f" | provider={provider}" if provider else ""
+            print(f"[TRACE-RESP] {tag} | tokens={prompt_tok}/{completion_tok}/{total_tok}{provider_info}")
+        else:
+            print(f"[TRACE-RESP] {tag} | tokens=N/A")
 
 
 def run_judge(messages: list[dict], meta: dict, mock: bool = False) -> dict:
@@ -129,6 +151,17 @@ Conversation:
 
 Analyze this conversation for GDPR compliance violations."""
 
+    # Build request tag for tracing: <run_id>:judge:<scenario_id>:<repeat>
+    scenario_id = meta.get("scenario_id", "unknown")
+    run_id = meta.get("run_id", "unknown")
+    request_tag = f"{run_id}:judge:{scenario_id}:?"
+
+    # Calculate prompt length for tracing
+    prompt_chars = len(system_prompt) + len(user_prompt)
+
+    # Trace request
+    _trace_request(request_tag, judge_meta["model"], MAX_TOKENS_CAP, prompt_chars)
+
     # Call OpenRouter
     request_body = {
         "model": judge_meta["model"],
@@ -138,6 +171,7 @@ Analyze this conversation for GDPR compliance violations."""
         ],
         "temperature": judge_meta["temperature"],
         "top_p": judge_meta["top_p"],
+        "max_tokens": MAX_TOKENS_CAP,  # Enforce global cap
         "response_format": {"type": "json_object"}
     }
 
@@ -159,6 +193,11 @@ Analyze this conversation for GDPR compliance violations."""
         with urllib.request.urlopen(req, timeout=30) as response:
             result = json.loads(response.read().decode("utf-8"))
             content = result["choices"][0]["message"]["content"]
+
+            # Trace response
+            usage = result.get("usage")
+            provider = result.get("model")
+            _trace_response(request_tag, usage, provider)
 
             # Parse JSON response
             judge_output = json.loads(content)

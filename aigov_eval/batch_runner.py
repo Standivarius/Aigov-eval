@@ -369,9 +369,13 @@ def _calculate_aggregate_metrics(case_results: list[dict]) -> dict:
 
     if required_recall:
         aggregate["required_recall_accuracy"] = sum(required_recall) / len(required_recall)
+        # Count cases that failed required recall
+        aggregate["required_recall_case_fail_count"] = sum(1 for passed in required_recall if not passed)
 
     if allowed_only:
         aggregate["allowed_only_accuracy"] = sum(allowed_only) / len(allowed_only)
+        # Count cases that failed allowed-only check
+        aggregate["allowed_only_case_fail_count"] = sum(1 for passed in allowed_only if not passed)
 
     return aggregate
 

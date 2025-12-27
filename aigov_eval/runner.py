@@ -107,7 +107,9 @@ def run_scenario(
 
     mock_audit = _extract_mock_audit(transcript)
     mock_judge = config.get("mock_judge", False)
-    scores = _run_scorers(scenario, transcript, mock_audit, mock_judge)
+    # Add run_id to scenario for judge tracing
+    scenario_with_run_id = {**scenario, "run_id": run_id}
+    scores = _run_scorers(scenario_with_run_id, transcript, mock_audit, mock_judge)
 
     finished_at = _utc_now()
     duration_ms = _calculate_duration_ms(started_at, finished_at)
