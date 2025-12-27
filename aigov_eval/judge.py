@@ -32,6 +32,84 @@ def _trace_response(tag: str, usage: Optional[dict], provider: Optional[str] = N
             print(f"[TRACE-RESP] {tag} | tokens=N/A")
 
 
+def _persist_trace_files(run_dir: str, request_body: dict, response_body: dict, content: str) -> None:
+    """Persist OpenRouter request/response to run directory when tracing enabled."""
+    if os.getenv("AIGOV_TRACE_OPENROUTER") != "1":
+        return
+
+    try:
+        from pathlib import Path
+        run_path = Path(run_dir)
+
+        # Write request
+        with open(run_path / "openrouter_judge_request.json", "w") as f:
+            json.dump(request_body, f, indent=2)
+
+        # Write full response
+        with open(run_path / "openrouter_judge_response.json", "w") as f:
+            json.dump(response_body, f, indent=2)
+
+        # Write raw content
+        with open(run_path / "openrouter_judge_content.txt", "w") as f:
+            f.write(content)
+    except Exception as e:
+        # Don't fail the run if trace persistence fails
+        print(f"[TRACE-WARNING] Failed to persist trace files: {e}")
+
+
+def parse_judge_json(content: str) -> dict:
+    """
+    Parse judge JSON output, robustly handling markdown fences and leading text.
+
+    Args:
+        content: Raw content from LLM response
+
+    Returns:
+        Parsed JSON dict
+
+    Raises:
+        json.JSONDecodeError: If no valid JSON found
+    """
+    if not content:
+        raise json.JSONDecodeError("Empty content", "", 0)
+
+    # Try direct parse first (fast path)
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        pass
+
+    # Strip markdown code fences if present
+    lines = content.strip().split('\n')
+
+    # Remove leading ```json or ``` fence
+    if lines and lines[0].strip().startswith('```'):
+        lines = lines[1:]
+
+    # Remove trailing ``` fence
+    if lines and lines[-1].strip() == '```':
+        lines = lines[:-1]
+
+    cleaned = '\n'.join(lines).strip()
+
+    # Try parsing cleaned content
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # Try to find JSON object in content (look for first { and last })
+    first_brace = cleaned.find('{')
+    last_brace = cleaned.rfind('}')
+
+    if first_brace != -1 and last_brace != -1 and first_brace < last_brace:
+        json_substr = cleaned[first_brace:last_brace + 1]
+        return json.loads(json_substr)  # Let this raise if still invalid
+
+    # If all else fails, raise original error
+    raise json.JSONDecodeError("No valid JSON found in content", content, 0)
+
+
 def run_judge(
     messages: list[dict],
     meta: dict,
@@ -239,8 +317,21 @@ Analyze this conversation for GDPR compliance violations."""
             provider = result.get("model")
             _trace_response(request_tag, usage, provider)
 
-            # Parse JSON response
-            judge_output = json.loads(content)
+            # Persist trace files if tracing enabled and run_dir available
+            run_dir = meta.get("run_dir")
+            if run_dir:
+                _persist_trace_files(run_dir, request_body, result, content)
+
+            # Parse JSON response with robust handling
+            try:
+                judge_output = parse_judge_json(content)
+            except json.JSONDecodeError as parse_err:
+                # Include raw content excerpt in error for diagnosis
+                excerpt = content[:500] if content else "(empty)"
+                raise ValueError(
+                    f"Failed to parse judge JSON: {parse_err}. "
+                    f"Content excerpt: {excerpt}"
+                ) from parse_err
 
             # Post-process signals: validate and normalize against taxonomy
             raw_signals = judge_output.get("signals", [])
@@ -276,12 +367,29 @@ Analyze this conversation for GDPR compliance violations."""
 
             return output
     except Exception as exc:
+        # Extract raw content excerpt for diagnosis if available
+        error_raw_excerpt = None
+        error_msg = str(exc)
+
+        # Try to extract content from ValueError raised by parse_judge_json
+        if "Content excerpt:" in error_msg:
+            # Extract the excerpt from the error message
+            try:
+                excerpt_start = error_msg.find("Content excerpt: ") + len("Content excerpt: ")
+                error_raw_excerpt = error_msg[excerpt_start:excerpt_start + 500]
+            except Exception:
+                pass
+
         # Fallback to unclear verdict on error
+        judge_meta_with_error = {**judge_meta, "error": error_msg}
+        if error_raw_excerpt:
+            judge_meta_with_error["error_raw_excerpt"] = error_raw_excerpt
+
         return {
             "verdict": "UNCLEAR",
             "signals": [],
             "citations": [],
-            "rationale": [f"Judge error: {str(exc)}"],
+            "rationale": [f"Judge error: {error_msg}"],
             "unscored_findings": [],
-            "judge_meta": {**judge_meta, "error": str(exc)}
+            "judge_meta": judge_meta_with_error
         }
