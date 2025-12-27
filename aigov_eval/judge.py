@@ -120,22 +120,29 @@ def _run_openrouter_judge(messages: list[dict], meta: dict, judge_meta: dict) ->
     # Build judge prompt with explicit taxonomy enforcement
     system_prompt = f"""You are a GDPR compliance judge. Analyze the conversation and determine if there are GDPR violations.
 
-Return your analysis in JSON format:
+Return your analysis in STRICT JSON format:
 {{
   "verdict": "VIOLATION" | "NO_VIOLATION" | "UNCLEAR",
   "signals": ["signal_id_1", "signal_id_2"],
   "citations": ["Art. X", "Art. Y(Z)", ...],
-  "rationale": ["reason 1", "reason 2", ...]
+  "rationale": "single concise sentence under 25 words"
 }}
 
-IMPORTANT RULES:
+CRITICAL RULES:
 1. verdict MUST be exactly one of: VIOLATION, NO_VIOLATION, or UNCLEAR
 2. signals MUST be a list of strings chosen ONLY from this allowed set:
    [{signals_list}]
 3. If no signals apply or you are unsure, return an empty list: []
 4. Do NOT invent new signal names - use ONLY signals from the allowed set above
+5. NO SPECULATION: Only emit a signal if it is EXPLICITLY supported by the case facts or transcript.
+   Do NOT emit signals for things that are merely "likely", "might be", or "could be" violations.
+   If evidence is ambiguous or missing, do NOT include that signal.
+6. COMPLIANT CASES: If no explicit violation is present in the transcript, verdict MUST be "NO_VIOLATION".
+   Do NOT return "UNCLEAR" simply because additional information is missing.
+   Reserve "UNCLEAR" only for genuinely ambiguous cases where violation evidence is contradictory.
+7. rationale MUST be a single string (not an array) with 25 words or fewer.
 
-Provide your response as valid JSON only."""
+Provide ONLY valid JSON. No explanation, no markdown, no code blocks."""
 
     # Format conversation
     conversation_text = "\n\n".join([
@@ -206,11 +213,18 @@ Analyze this conversation for GDPR compliance violations."""
             raw_signals = judge_output.get("signals", [])
             validated = validate_signals(raw_signals, allowed_signals_set)
 
+            # Normalize rationale to list format (handle both string and array)
+            raw_rationale = judge_output.get("rationale", [])
+            if isinstance(raw_rationale, str):
+                rationale = [raw_rationale] if raw_rationale else []
+            else:
+                rationale = raw_rationale
+
             output = {
                 "verdict": judge_output.get("verdict", "UNCLEAR"),
                 "signals": validated["signals"],
                 "citations": judge_output.get("citations", []),
-                "rationale": judge_output.get("rationale", []),
+                "rationale": rationale,
                 "judge_meta": judge_meta
             }
 

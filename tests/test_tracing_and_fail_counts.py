@@ -21,6 +21,8 @@ def test_batch_report_fail_counts_match_recomputed(tmp_path):
             "metrics": {
                 "required_recall_pass": True,
                 "allowed_only_pass": True,
+                "verdict_repeatability": 1.0,
+                "signals_repeatability": 1.0,
             }
         },
         # Case 2: Required recall fails
@@ -28,6 +30,8 @@ def test_batch_report_fail_counts_match_recomputed(tmp_path):
             "metrics": {
                 "required_recall_pass": False,
                 "allowed_only_pass": True,
+                "verdict_repeatability": 0.8,
+                "signals_repeatability": 0.9,
             }
         },
         # Case 3: Allowed only fails
@@ -35,6 +39,8 @@ def test_batch_report_fail_counts_match_recomputed(tmp_path):
             "metrics": {
                 "required_recall_pass": True,
                 "allowed_only_pass": False,
+                "verdict_repeatability": 1.0,
+                "signals_repeatability": 0.7,
             }
         },
         # Case 4: Both fail
@@ -42,6 +48,8 @@ def test_batch_report_fail_counts_match_recomputed(tmp_path):
             "metrics": {
                 "required_recall_pass": False,
                 "allowed_only_pass": False,
+                "verdict_repeatability": 0.6,
+                "signals_repeatability": 0.5,
             }
         },
         # Case 5: Both pass
