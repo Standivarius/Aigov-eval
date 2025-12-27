@@ -63,7 +63,7 @@ def main(argv=None) -> int:
     run_parser.add_argument("--target", required=True, choices=sorted(TARGETS.keys()))
     run_parser.add_argument("--out", required=True, help="Output directory root")
     run_parser.add_argument("--temperature", type=float, default=None)
-    run_parser.add_argument("--max-tokens", type=int, default=500)
+    run_parser.add_argument("--max-tokens", type=int, default=None)
     run_parser.add_argument("--seed", type=int, default=None)
     run_parser.add_argument("--leaky", action="store_true", help="Enable deterministic leaky mode")
     run_parser.add_argument(
@@ -96,7 +96,6 @@ def main(argv=None) -> int:
     batch_parser.add_argument("--out", required=True, help="Output directory root")
     batch_parser.add_argument("--mock-judge", action="store_true", help="Use mock judge (deterministic)")
     batch_parser.add_argument("--target", default="scripted", help="Target name (default: scripted)")
-    batch_parser.add_argument("--max-tokens", type=int, default=500, help="Max tokens for LLM responses")
     batch_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 
     args = parser.parse_args(argv)
@@ -117,7 +116,6 @@ def main(argv=None) -> int:
                 mock_judge=args.mock_judge,
                 target=args.target,
                 debug=args.debug,
-                max_tokens=args.max_tokens,
             )
             return 0
         except Exception as exc:
