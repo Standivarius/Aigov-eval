@@ -6,8 +6,9 @@ import argparse
 import json
 import os
 
-from .batch_runner import run_batch
+from .batch_runner import batch_run
 from .env import init_env
+from .offline_judge_runner import run_offline_judge
 from .runner import run_scenario
 from .targets import TARGETS
 
@@ -98,6 +99,26 @@ def main(argv=None) -> int:
     batch_parser.add_argument("--target", default="scripted", help="Target name (default: scripted)")
     batch_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 
+    offline_judge_parser = subparsers.add_parser(
+        "offline-judge",
+        help="Minimal offline judge runner - reads fixtures and produces schema-valid judge_output.json"
+    )
+    offline_judge_parser.add_argument(
+        "--fixtures-dir",
+        default="cases/calibration",
+        help="Directory containing fixture JSON files (default: cases/calibration)"
+    )
+    offline_judge_parser.add_argument(
+        "--out",
+        required=True,
+        help="Output directory for judge_output.json files"
+    )
+    offline_judge_parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Print progress messages"
+    )
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -106,10 +127,29 @@ def main(argv=None) -> int:
 
     init_env(debug=getattr(args, "debug", False))
 
+    if args.command == "offline-judge":
+        # Offline judge runner command
+        try:
+            from pathlib import Path
+            summary = run_offline_judge(
+                fixtures_dir=Path(args.fixtures_dir),
+                output_dir=Path(args.out),
+                verbose=args.verbose,
+            )
+            if summary["errors"]:
+                print(f"Completed with {len(summary['errors'])} errors")
+                return 2
+            print(f"Successfully processed {summary['processed']} fixtures")
+            print(f"Output directory: {summary['output_dir']}")
+            return 0
+        except Exception as exc:
+            print(f"Offline judge run failed: {exc}")
+            return 2
+
     if args.command == "batch-run":
         # Batch run command
         try:
-            run_batch(
+            batch_run(
                 cases_dir=args.cases_dir,
                 repeats=args.repeats,
                 output_root=args.out,
