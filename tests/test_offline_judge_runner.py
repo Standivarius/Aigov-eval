@@ -49,7 +49,7 @@ def test_generate_judge_output_schema():
 
 
 def test_run_offline_judge():
-    """Test that offline judge runner processes all fixtures."""
+    """Test that offline judge runner processes all fixtures and produces behaviour_json output."""
     with tempfile.TemporaryDirectory() as tmpdir:
         fixtures_dir = Path("cases/calibration")
         output_dir = Path(tmpdir) / "output"
@@ -73,16 +73,26 @@ def test_run_offline_judge():
         # Validate summary file exists
         assert (output_dir / "_summary.json").exists()
 
-        # Validate one output file schema
+        # Validate one output file has behaviour_json schema (NOT internal schema)
         sample_output = output_files[0]
         with open(sample_output, 'r') as f:
             data = json.load(f)
 
-        assert "verdict" in data
+        # Check for behaviour_json fields (after mapping)
+        assert "audit_id" in data
+        assert "run_id" in data
+        assert "finding_id" in data
+        assert "scenario_id" in data
+        assert "framework" in data
+        assert "rating" in data  # NOT "verdict"
+        assert "reasoning" in data  # NOT "rationale"
+        assert "legal_references" in data  # NOT "citations"
         assert "signals" in data
-        assert "citations" in data
-        assert "rationale" in data
-        assert "judge_meta" in data
+        assert "severity" in data
+        assert "inspect_provenance" in data  # NOT "judge_meta"
+
+        # Validate rating is mapped correctly
+        assert data["rating"] in ["VIOLATED", "COMPLIANT", "UNDECIDED"]
 
 
 def test_offline_judge_validates_signals():
