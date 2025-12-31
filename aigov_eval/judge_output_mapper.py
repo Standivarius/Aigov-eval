@@ -37,7 +37,7 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 
 def _generate_deterministic_id(prefix: str, *components: str) -> str:
@@ -212,19 +212,28 @@ def map_judge_output_to_behaviour_json(
 
 def validate_against_schema(
     output: dict[str, Any],
-    schema_path: Path | None = None
+    schema_path: Path | None = None,
+    schema_kind: Literal["eval", "specs"] = "eval"
 ) -> tuple[bool, str | None]:
     """
     Validate output against behaviour_json_v0_phase0 schema.
 
     Args:
         output: Output dict to validate
-        schema_path: Path to schema file (uses default if None)
+        schema_path: Path to schema file (if provided, overrides schema_kind)
+        schema_kind: Which schema to use - "eval" (Aigov-eval harness schema)
+                     or "specs" (canonical AiGov-specs schema). Default: "eval"
 
     Returns:
         Tuple of (is_valid, error_message)
         - (True, None) if valid
         - (False, error_msg) if invalid
+
+    Notes:
+        - "eval" schema is the temporary harness schema for offline judge runner
+          (looser requirements: freeform IDs, reasoning as list)
+        - "specs" schema is the canonical schema from AiGov-specs
+          (strict requirements: AUD-YYYYMMDD-NNN format, UUIDs, reasoning as string)
     """
     try:
         import jsonschema
@@ -232,9 +241,10 @@ def validate_against_schema(
         # Graceful degradation if jsonschema not available
         return (True, "jsonschema not available, skipping validation")
 
-    # Use default schema path if not provided
+    # Use explicit schema path if provided, otherwise derive from schema_kind
     if schema_path is None:
-        schema_path = Path(__file__).parent.parent / "schemas" / "behaviour_json_v0_phase0.schema.json"
+        schema_filename = f"behaviour_json_v0_phase0.schema-{schema_kind}.json"
+        schema_path = Path(__file__).parent.parent / "schemas" / schema_filename
 
     if not schema_path.exists():
         return (False, f"Schema file not found: {schema_path}")
@@ -258,7 +268,9 @@ def validate_against_schema(
 def map_and_validate(
     internal_output: dict[str, Any],
     scenario_id: str | None = None,
-    fail_on_invalid: bool = True
+    fail_on_invalid: bool = True,
+    schema_kind: Literal["eval", "specs"] = "eval",
+    schema_path: Path | None = None
 ) -> dict[str, Any]:
     """
     Map internal judge output and validate against schema.
@@ -269,6 +281,8 @@ def map_and_validate(
         internal_output: Internal judge output
         scenario_id: Optional scenario ID
         fail_on_invalid: If True, raise ValueError on validation failure
+        schema_kind: Which schema to use - "eval" or "specs". Default: "eval"
+        schema_path: Explicit schema path (overrides schema_kind if provided)
 
     Returns:
         Mapped and validated behaviour_json output
@@ -279,8 +293,12 @@ def map_and_validate(
     # Map to behaviour_json format
     behaviour_json = map_judge_output_to_behaviour_json(internal_output, scenario_id)
 
-    # Validate
-    is_valid, error_msg = validate_against_schema(behaviour_json)
+    # Validate against specified schema
+    is_valid, error_msg = validate_against_schema(
+        behaviour_json,
+        schema_path=schema_path,
+        schema_kind=schema_kind
+    )
 
     if not is_valid and fail_on_invalid:
         raise ValueError(f"Schema validation failed: {error_msg}")

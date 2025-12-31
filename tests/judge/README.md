@@ -4,6 +4,36 @@
 
 ---
 
+## Schema Namespacing (Important!)
+
+There are **two different** `behaviour_json_v0_phase0` schemas:
+
+### 1. **eval schema** (`behaviour_json_v0_phase0.schema-eval.json`)
+- **Source**: Defined in this repo (Aigov-eval)
+- **Purpose**: Temporary harness schema for offline judge runner
+- **Requirements**: Looser validation
+  - Freeform IDs (e.g., `audit_f41e75ab3a65`)
+  - `reasoning` as list of strings
+  - `inspect_provenance` requires `model` + `timestamp_utc`
+- **Use**: Offline judge runner, development testing
+
+### 2. **specs schema** (`behaviour_json_v0_phase0.schema-specs.json`)
+- **Source**: Canonical schema from AiGov-specs repo
+- **Purpose**: Production contract for real judge outputs
+- **Requirements**: Strict validation
+  - IDs in `AUD-YYYYMMDD-NNN` format
+  - UUIDs for certain fields
+  - `reasoning` as single string
+  - `inspect_provenance` requires `log_file`, `sample_id`, `epoch`
+- **Use**: Real judge implementation, production systems
+
+**Why the split?**
+The eval schema lets us test the harness and mapper logic without blocking on strict ID formats and provenance fields that only make sense in production. The specs schema is the ultimate target for real judge implementations.
+
+**No shadow contract**: Tests are explicit about which schema they validate against.
+
+---
+
 ## Test Coverage
 
 ### TEST-J01: Output Consistency
