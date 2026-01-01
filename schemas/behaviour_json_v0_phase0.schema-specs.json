@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/AiGov-specs/schemas/behaviour_json_v0_phase0.schema.json",
+  "$id": "https://github.com/Standivarius/AiGov-specs/schemas/behaviour_json_v0_phase0.schema-specs.json",
   "title": "Behaviour JSON v0 Phase 0 (AiGov-specs canonical schema)",
   "description": "Canonical schema from AiGov-specs for judge output in behaviour_json_v0_phase0 format. NOTE: This is currently a placeholder copy of the eval schema. The canonical specs schema will eventually require: (1) IDs in AUD-YYYYMMDD-NNN format, (2) UUIDs for certain fields, (3) reasoning as single string (not array), (4) inspect_provenance with log_file/sample_id/epoch fields.",
   "type": "object",

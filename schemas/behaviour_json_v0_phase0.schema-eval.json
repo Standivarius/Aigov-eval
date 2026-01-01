@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Standivarius/Aigov-eval/schemas/behaviour_json_v0_phase0.schema.json",
+  "$id": "https://github.com/Standivarius/Aigov-eval/schemas/behaviour_json_v0_phase0.schema-eval.json",
   "title": "Behaviour JSON v0 Phase 0",
   "description": "Schema for judge output in behaviour_json_v0_phase0 format. This is the canonical contract for judge outputs in Phase 0.",
   "type": "object",
