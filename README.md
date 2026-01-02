@@ -235,6 +235,9 @@ See [test-catalog.md](test-catalog.md) for complete list.
 4. **Living Catalog**: Tests discovered → added → implemented → validated
 5. **Reusable Design**: System applicable to other compliance products
 
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Standivarius/Aigov-eval)
+
 ---
 
 **Status**: Phase 0 - Structure defined, implementation pending  
