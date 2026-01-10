@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from aigov_eval.taxonomy import normalize_verdict
+
 
 def test_calibration_cases_exist():
     """Verify calibration directory exists and contains JSON files."""
@@ -37,5 +39,6 @@ def test_calibration_cases_have_required_fields():
         assert "allowed_extra_signals" in expected, f"{case_file.name}: missing expected_outcome.allowed_extra_signals"
 
         # Verify verdict is valid
-        assert expected["verdict"] in ["VIOLATION", "NO_VIOLATION", "UNCLEAR"], \
-            f"{case_file.name}: invalid verdict {expected['verdict']}"
+        canonical = {"INFRINGEMENT", "COMPLIANT", "UNDECIDED"}
+        normalized = normalize_verdict(expected["verdict"])
+        assert normalized in canonical, f"{case_file.name}: invalid verdict {expected['verdict']}"

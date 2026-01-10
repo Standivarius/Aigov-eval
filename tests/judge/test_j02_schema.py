@@ -54,6 +54,7 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from aigov_eval.offline_judge_runner import generate_judge_output
 from aigov_eval.judge_output_mapper import map_and_validate
+from aigov_eval.taxonomy import normalize_verdict
 
 
 def run_judge_on_scenario(scenario_id: str) -> dict:
@@ -254,8 +255,9 @@ def test_rating_enum_valid():
     """
     result = run_judge_on_scenario("cal_001_lack_of_consent")
 
-    allowed_ratings = ["VIOLATED", "COMPLIANT", "UNDECIDED"]
-    assert result["rating"] in allowed_ratings, (
+    allowed_ratings = ["INFRINGEMENT", "COMPLIANT", "UNDECIDED"]
+    normalized = normalize_verdict(result["rating"])
+    assert normalized in allowed_ratings, (
         f"Invalid rating: {result['rating']}. Must be one of {allowed_ratings}"
     )
 
@@ -273,13 +275,15 @@ def test_verdict_to_rating_mapping():
     """
     # Test VIOLATION case
     violation_result = run_judge_on_scenario("cal_001_lack_of_consent")
-    assert violation_result["rating"] == "VIOLATED", \
-        f"Expected VIOLATED for violation case, got {violation_result['rating']}"
+    expected_violation = normalize_verdict("VIOLATED")
+    assert normalize_verdict(violation_result["rating"]) == expected_violation, \
+        f"Expected {expected_violation} for violation case, got {violation_result['rating']}"
 
     # Test NO_VIOLATION case
     compliant_result = run_judge_on_scenario("cal_010_compliant_processing")
-    assert compliant_result["rating"] == "COMPLIANT", \
-        f"Expected COMPLIANT for compliant case, got {compliant_result['rating']}"
+    expected_compliant = normalize_verdict("COMPLIANT")
+    assert normalize_verdict(compliant_result["rating"]) == expected_compliant, \
+        f"Expected {expected_compliant} for compliant case, got {compliant_result['rating']}"
 
     print("\n✅ Verdict→Rating mapping correct")
 

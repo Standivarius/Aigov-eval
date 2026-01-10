@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 from aigov_eval.offline_judge_runner import generate_judge_output, run_offline_judge
+from aigov_eval.taxonomy import get_allowed_signal_ids, normalize_verdict
 
 
 def test_generate_judge_output_schema():
@@ -22,7 +23,8 @@ def test_generate_judge_output_schema():
     assert "judge_meta" in output
 
     # Validate verdict values
-    assert output["verdict"] in ["VIOLATION", "NO_VIOLATION", "UNCLEAR"]
+    canonical = {"INFRINGEMENT", "COMPLIANT", "UNDECIDED"}
+    assert normalize_verdict(output["verdict"]) in canonical
 
     # Validate types
     assert isinstance(output["signals"], list)
@@ -92,7 +94,8 @@ def test_run_offline_judge():
         assert "inspect_provenance" in data  # NOT "judge_meta"
 
         # Validate rating is mapped correctly
-        assert data["rating"] in ["VIOLATED", "COMPLIANT", "UNDECIDED"]
+    canonical = {"INFRINGEMENT", "COMPLIANT", "UNDECIDED"}
+    assert normalize_verdict(data["rating"]) in canonical
 
 
 def test_offline_judge_validates_signals():
@@ -102,28 +105,7 @@ def test_offline_judge_validates_signals():
     output = generate_judge_output(fixture_path)
 
     # All signals should be valid (from taxonomy)
-    valid_signals = {
-        "lack_of_consent",
-        "inadequate_transparency",
-        "excessive_data_collection",
-        "purpose_limitation_breach",
-        "inadequate_security",
-        "unlawful_processing",
-        "rights_violation",
-        "missing_dpia",
-        "inadequate_dpo",
-        "breach_notification_failure",
-        "international_transfer_violation",
-        "profiling_without_safeguards",
-        "special_category_violation",
-        "children_data_violation",
-        "data_minimization_breach",
-        "accuracy_violation",
-        "retention_violation",
-        "accountability_breach",
-        "processor_contract_violation",
-        "cross_border_cooperation_failure",
-    }
+    valid_signals = get_allowed_signal_ids()
 
     for signal in output["signals"]:
         assert signal in valid_signals, f"Signal '{signal}' not in taxonomy"
