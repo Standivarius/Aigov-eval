@@ -39,7 +39,7 @@ python -m pytest tests/minimal_loop -q
 Without the env var, evals use the local fallback targets even if EP is installed.
 
 ## EP CLI smoke test (optional)
-Run the EP CLI smoke test that exercises `aigov-ep execute` with the scripted target:
+Run the EP CLI smoke test that exercises Stage A (`aigov-ep execute`) with the scripted target:
 ```bash
 pushd ..\AiGov-mvp
 pip install -e .
@@ -51,6 +51,36 @@ $env:AIGOV_RUN_EP_SMOKE="1"
 ```
 ```bash
 python -m pytest tests/minimal_loop/test_ep_cli_execute_smoke.py -q
+```
+
+## EP CLI judge smoke test (optional)
+Run the EP CLI judge smoke test that exercises Stage B (`aigov-ep judge`):
+```bash
+pushd ..\AiGov-mvp
+pip install -e .
+popd
+```
+PowerShell:
+```powershell
+$env:AIGOV_RUN_EP_SMOKE="1"
+```
+```bash
+python -m pytest tests/minimal_loop/test_ep_cli_judge_smoke.py -q
+```
+
+## EP bundle->execute smoke test (optional)
+Run the EP bundle->execute smoke test (Stage A + Stage B) with the scripted target:
+```bash
+pushd ..\AiGov-mvp
+pip install -e .
+popd
+```
+PowerShell:
+```powershell
+$env:AIGOV_RUN_EP_SMOKE="1"
+```
+```bash
+python -m pytest tests/minimal_loop/test_ep_bundle_execute_smoke.py -q
 ```
 
 ## Run TargetLab E2E smoke test

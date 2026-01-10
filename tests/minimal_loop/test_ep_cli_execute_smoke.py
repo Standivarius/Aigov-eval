@@ -63,6 +63,10 @@ def test_ep_cli_execute_smoke(tmp_path: Path) -> None:
 
     assert run_dir.exists(), f"RUN_DIR does not exist: {run_dir}"
 
-    required = ["transcript.json", "scores.json", "run_meta.json", "evidence_pack.json"]
+    required = ["scenario.json", "transcript.json", "run_meta.json"]
     missing = [name for name in required if not (run_dir / name).exists()]
     assert not missing, f"Missing artifacts in {run_dir}: {missing}"
+
+    unexpected = ["scores.json", "evidence_pack.json"]
+    present = [name for name in unexpected if (run_dir / name).exists()]
+    assert not present, f"Unexpected Stage B artifacts in {run_dir}: {present}"
