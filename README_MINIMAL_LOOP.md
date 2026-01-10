@@ -53,6 +53,21 @@ $env:AIGOV_RUN_EP_SMOKE="1"
 python -m pytest tests/minimal_loop/test_ep_cli_execute_smoke.py -q
 ```
 
+## EP bundle->execute smoke test (optional)
+Run the EP bundle->execute smoke test with the scripted target:
+```bash
+pushd ..\AiGov-mvp
+pip install -e .
+popd
+```
+PowerShell:
+```powershell
+$env:AIGOV_RUN_EP_SMOKE="1"
+```
+```bash
+python -m pytest tests/minimal_loop/test_ep_bundle_execute_smoke.py -q
+```
+
 ## Run TargetLab E2E smoke test
 ```bash
 $env:AIGOV_E2E = "1"
