@@ -22,6 +22,16 @@ pip install -r requirements-dev.txt
 python -m pytest tests/minimal_loop -q
 ```
 
+## Using canonical EP targets (optional)
+In a multi-repo workspace, you can install EP and run evals using EP targets:
+```bash
+pushd ..\AiGov-mvp
+pip install -e .
+popd
+python -m pytest tests/minimal_loop -q
+```
+Without that install, evals use the local fallback targets.
+
 ## Run TargetLab E2E smoke test
 ```bash
 $env:AIGOV_E2E = "1"
