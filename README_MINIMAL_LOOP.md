@@ -28,9 +28,15 @@ In a multi-repo workspace, you can install EP and run evals using EP targets:
 pushd ..\AiGov-mvp
 pip install -e .
 popd
+```
+PowerShell:
+```powershell
+$env:AIGOV_USE_EP_TARGETS="1"
+```
+```bash
 python -m pytest tests/minimal_loop -q
 ```
-Without that install, evals use the local fallback targets.
+Without the env var, evals use the local fallback targets even if EP is installed.
 
 ## Run TargetLab E2E smoke test
 ```bash
