@@ -221,9 +221,8 @@ def validate_against_schema(
 
     Args:
         output: Output dict to validate
-        schema_path: Path to schema file (if provided, overrides schema_kind)
-        schema_kind: Which schema to use - "eval" (Aigov-eval harness schema)
-                     or "specs" (canonical AiGov-specs schema). Default: "eval"
+        schema_path: Path to schema file (if provided, overrides default)
+        schema_kind: Deprecated (ignored). Kept for backward compatibility.
 
     Returns:
         Tuple of (is_valid, error_message)
@@ -231,10 +230,7 @@ def validate_against_schema(
         - (False, error_msg) if invalid
 
     Notes:
-        - "eval" schema is the temporary harness schema for offline judge runner
-          (looser requirements: freeform IDs, reasoning as list)
-        - "specs" schema is the canonical schema from AiGov-specs
-          (strict requirements: AUD-YYYYMMDD-NNN format, UUIDs, reasoning as string)
+        - Default schema is the canonical vendored contract in aigov_eval/contracts.
     """
     try:
         import jsonschema
@@ -242,13 +238,9 @@ def validate_against_schema(
         # Graceful degradation if jsonschema not available
         return (True, "jsonschema not available, skipping validation")
 
-    # Use explicit schema path if provided, otherwise derive from schema_kind
+    # Use explicit schema path if provided, otherwise use the vendored schema.
     if schema_path is None:
-        if schema_kind == "specs":
-            schema_path = get_behaviour_schema_path()
-        else:
-            schema_filename = f"behaviour_json_v0_phase0.schema-{schema_kind}.json"
-            schema_path = Path(__file__).parent.parent / "schemas" / schema_filename
+        schema_path = get_behaviour_schema_path()
 
     if not schema_path.exists():
         return (False, f"Schema file not found: {schema_path}")
@@ -285,8 +277,8 @@ def map_and_validate(
         internal_output: Internal judge output
         scenario_id: Optional scenario ID
         fail_on_invalid: If True, raise ValueError on validation failure
-        schema_kind: Which schema to use - "eval" or "specs". Default: "eval"
-        schema_path: Explicit schema path (overrides schema_kind if provided)
+        schema_kind: Deprecated (ignored). Kept for backward compatibility.
+        schema_path: Explicit schema path (overrides default if provided)
 
     Returns:
         Mapped and validated behaviour_json output
@@ -300,8 +292,7 @@ def map_and_validate(
     # Validate against specified schema
     is_valid, error_msg = validate_against_schema(
         behaviour_json,
-        schema_path=schema_path,
-        schema_kind=schema_kind
+        schema_path=schema_path
     )
 
     if not is_valid and fail_on_invalid:

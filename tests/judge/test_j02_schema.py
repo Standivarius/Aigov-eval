@@ -91,22 +91,14 @@ def run_judge_on_scenario(scenario_id: str) -> dict:
     return behaviour_json
 
 
-def load_schema(schema_kind: str = "eval") -> dict:
+def load_schema() -> dict:
     """
-    Load behaviour_json_v0_phase0 JSON schema.
-
-    Args:
-        schema_kind: "eval" for Aigov-eval harness schema (default),
-                     "specs" for canonical AiGov-specs schema
+    Load the canonical behaviour_json_v0_phase0 JSON schema.
 
     Returns:
         JSON schema dict
     """
-    if schema_kind == "specs":
-        schema_path = get_behaviour_schema_path()
-    else:
-        schema_filename = f"behaviour_json_v0_phase0.schema-{schema_kind}.json"
-        schema_path = Path(__file__).parent.parent.parent / "schemas" / schema_filename
+    schema_path = get_behaviour_schema_path()
 
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")
@@ -135,13 +127,7 @@ CALIBRATION_SCENARIOS = [
 @pytest.mark.parametrize("scenario_id", CALIBRATION_SCENARIOS)
 def test_schema_validation_eval(scenario_id):
     """
-    Validate offline Judge output against behaviour_json_v0_phase0 EVAL schema.
-
-    This validates against the Aigov-eval harness schema (schema-eval.json),
-    which is the temporary schema for offline judge runner with looser requirements:
-    - Freeform IDs (not AUD-YYYYMMDD-NNN format)
-    - Reasoning as list of strings
-    - Provenance requires model+timestamp (not log_file/sample_id/epoch)
+    Validate offline Judge output against behaviour_json_v0_phase0 schema.
 
     Checks:
     - All required fields present
@@ -149,71 +135,25 @@ def test_schema_validation_eval(scenario_id):
     - Enum values valid (rating, severity, etc.)
     - No additional properties (if additionalProperties: false)
     """
-    print(f"\nValidating EVAL schema for {scenario_id}...")
+    print(f"\nValidating schema for {scenario_id}...")
 
     # Run Judge
     result = run_judge_on_scenario(scenario_id)
 
-    # Load eval schema explicitly
-    schema = load_schema(schema_kind="eval")
+    # Load canonical schema
+    schema = load_schema()
 
     # Validate
     if jsonschema is None:
-        print(f"  ⚠️  {scenario_id}: Skipped (jsonschema not available)")
+        print(f"  SKIP {scenario_id}: jsonschema not available")
         return
 
     try:
         jsonschema.validate(instance=result, schema=schema)
-        print(f"  ✅ {scenario_id}: EVAL schema valid")
+        print(f"  OK {scenario_id}: schema valid")
     except jsonschema.ValidationError as e:
         pytest.fail(
-            f"❌ {scenario_id}: EVAL schema validation failed\n"
-            f"Error: {e.message}\n"
-            f"Path: {list(e.path)}\n"
-            f"Failed value: {e.instance}"
-        )
-    except jsonschema.SchemaError as e:
-        pytest.fail(f"Schema itself is invalid: {e.message}")
-
-
-@pytest.mark.skip(reason="specs schema fixtures not present yet")
-@pytest.mark.parametrize("scenario_id", CALIBRATION_SCENARIOS)
-def test_schema_validation_specs(scenario_id):
-    """
-    Validate Judge output against canonical AiGov-specs behaviour_json_v0_phase0 schema.
-
-    This validates against the canonical schema from AiGov-specs (schema-specs.json),
-    which has strict requirements:
-    - IDs in AUD-YYYYMMDD-NNN format
-    - UUIDs for certain fields
-    - Reasoning as single string
-    - Provenance requires log_file, sample_id, epoch fields
-
-    NOTE: This test is skipped because we don't yet have fixtures that conform
-    to the strict specs schema. This test should be enabled when:
-    1. schema-specs.json is added to schemas/
-    2. Fixtures are created with compliant IDs and scenario_id patterns
-    3. Real judge implementation produces specs-compliant output
-    """
-    print(f"\nValidating SPECS schema for {scenario_id}...")
-
-    # Run Judge (would need different implementation for specs compliance)
-    result = run_judge_on_scenario(scenario_id)
-
-    # Load specs schema
-    schema = load_schema(schema_kind="specs")
-
-    # Validate
-    if jsonschema is None:
-        print(f"  ⚠️  {scenario_id}: Skipped (jsonschema not available)")
-        return
-
-    try:
-        jsonschema.validate(instance=result, schema=schema)
-        print(f"  ✅ {scenario_id}: SPECS schema valid")
-    except jsonschema.ValidationError as e:
-        pytest.fail(
-            f"❌ {scenario_id}: SPECS schema validation failed\n"
+            f"FAIL {scenario_id}: schema validation failed\n"
             f"Error: {e.message}\n"
             f"Path: {list(e.path)}\n"
             f"Failed value: {e.instance}"
@@ -380,7 +320,7 @@ if __name__ == "__main__":
             print("\n6. Testing inspect provenance...")
             test_inspect_provenance_present()
 
-            print("\n7. Testing EVAL schema validation for all scenarios...")
+            print("\n7. Testing schema validation for all scenarios...")
             for scenario_id in CALIBRATION_SCENARIOS:
                 test_schema_validation_eval(scenario_id)
 
