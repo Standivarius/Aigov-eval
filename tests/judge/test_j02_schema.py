@@ -54,6 +54,7 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from aigov_eval.offline_judge_runner import generate_judge_output
 from aigov_eval.judge_output_mapper import map_and_validate
+from aigov_eval.contracts import get_behaviour_schema_path
 from aigov_eval.taxonomy import normalize_verdict
 
 
@@ -101,8 +102,11 @@ def load_schema(schema_kind: str = "eval") -> dict:
     Returns:
         JSON schema dict
     """
-    schema_filename = f"behaviour_json_v0_phase0.schema-{schema_kind}.json"
-    schema_path = Path(__file__).parent.parent.parent / "schemas" / schema_filename
+    if schema_kind == "specs":
+        schema_path = get_behaviour_schema_path()
+    else:
+        schema_filename = f"behaviour_json_v0_phase0.schema-{schema_kind}.json"
+        schema_path = Path(__file__).parent.parent.parent / "schemas" / schema_filename
 
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")

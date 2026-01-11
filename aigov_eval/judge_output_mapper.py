@@ -39,6 +39,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
+from aigov_eval.contracts import get_behaviour_schema_path
 
 def _generate_deterministic_id(prefix: str, *components: str) -> str:
     """
@@ -243,8 +244,11 @@ def validate_against_schema(
 
     # Use explicit schema path if provided, otherwise derive from schema_kind
     if schema_path is None:
-        schema_filename = f"behaviour_json_v0_phase0.schema-{schema_kind}.json"
-        schema_path = Path(__file__).parent.parent / "schemas" / schema_filename
+        if schema_kind == "specs":
+            schema_path = get_behaviour_schema_path()
+        else:
+            schema_filename = f"behaviour_json_v0_phase0.schema-{schema_kind}.json"
+            schema_path = Path(__file__).parent.parent / "schemas" / schema_filename
 
     if not schema_path.exists():
         return (False, f"Schema file not found: {schema_path}")
