@@ -8,7 +8,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import jsonschema
 import pytest
+
+from aigov_eval.contracts import get_behaviour_schema_path
 
 
 _TRUTHY = {"1", "true", "yes"}
@@ -94,6 +97,13 @@ def test_ep_cli_judge_smoke(tmp_path: Path) -> None:
     required = ["scores.json", "evidence_pack.json"]
     missing = [name for name in required if not (run_path / name).exists()]
     assert not missing, f"Missing Stage B artifacts in {run_path}: {missing}"
+
+    behaviour_path = run_path / "behaviour_json_v0_phase0.json"
+    assert behaviour_path.exists(), f"Missing behaviour_json_v0_phase0.json in {run_path}"
+
+    behaviour_json = json.loads(behaviour_path.read_text(encoding="utf-8"))
+    schema = json.loads(get_behaviour_schema_path().read_text(encoding="utf-8"))
+    jsonschema.validate(instance=behaviour_json, schema=schema)
 
     scores = json.loads((run_path / "scores.json").read_text(encoding="utf-8"))
     canonical = _load_canonical_verdicts()
