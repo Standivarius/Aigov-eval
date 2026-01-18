@@ -1,5 +1,10 @@
 # Aigov-eval - Evaluation & Testing System
 
+> [!WARNING]
+> DEPRECATED: This repo is read-only. Canonical repo is https://github.com/Standivarius/AiGov-monorepo
+> Mapping doc: https://github.com/Standivarius/AiGov-monorepo/blob/main/docs/migration/LEGACY_REPOS.md
+> All evaluation work happens in monorepo.
+
 **AIGov Systematic Testing Framework**
 
 ---
